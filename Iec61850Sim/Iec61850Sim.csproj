@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.54.1-alpha.0.68" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="iec61850dotnet">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\SPIN\Action.NetX\an-10\Protocols\iec61850dotnet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Demo_Ed2.cfg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Demo_Ed2.icd">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
