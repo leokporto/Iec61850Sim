@@ -1,23 +1,52 @@
+using IEC61850.Server;
 using Iec61850Sim.Api.Core;
+using Iec61850Sim.Api.Iec61850;
+using Iec61850Sim.Api.Model;
 
 namespace Iec61850Sim.Api.Services;
 
 public class SimulationService : BackgroundService
 {
-    private readonly SimulationEngine engine;
+    private readonly SimulationEngine simulation;
+    private readonly IecServerHost iecHost;
+    private readonly DeviceManager deviceManager;
+    private readonly PointRegistry registry;
+    private readonly IedModel model;
 
-    public SimulationService(SimulationEngine engine)
+    public SimulationService(IedModel model,
+        PointRegistry registry,
+        DeviceManager deviceManager,
+        SimulationEngine simulation,
+        IecServerHost iecHost)
     {
-        this.engine = engine;
+        this.model = model;
+        this.registry = registry;
+        this.deviceManager = deviceManager;
+        this.simulation = simulation;
+        this.iecHost = iecHost;
+    }
+
+    public override async Task StartAsync(CancellationToken cancellationToken)
+    {
+        iecHost.Start(102);
+
+        var binder = new PointBinder();
+        binder.Bind(model, deviceManager, iecHost.Server);
+        
+        await base.StartAsync(cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        Console.WriteLine("Simulation service started");
+
         while (!stoppingToken.IsCancellationRequested)
         {
-            engine.Step(0.1);
+            simulation.Step(0.1);
 
-            await Task.Delay(100);
+            iecHost.Publish();
+
+            await Task.Delay(2000, stoppingToken);
         }
     }
 }

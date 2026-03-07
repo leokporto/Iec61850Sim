@@ -1,3 +1,4 @@
+
 using Iec61850Sim.Api.Model;
 using Iec61850Sim.Api.Model.Devices;
 
@@ -6,19 +7,22 @@ namespace Iec61850Sim.Api.Core;
 public class SimulationEngine
 {
     private readonly SimulationClock clock;
+    private readonly DeviceManager deviceManager;
 
-    private readonly List<DeviceBase> devices = new();
-
-    public SimulationEngine(SimulationClock clock)
+    public SimulationEngine(SimulationClock clock, DeviceManager deviceManager)
     {
         this.clock = clock;
+        this.deviceManager = deviceManager;
+
+        RegisterDevices();
     }
 
-    public void AddDevice(DeviceBase device)
+    private void RegisterDevices()
     {
-        devices.Add(device);
-
-        clock.Register(device.Step);
+        foreach (var device in deviceManager.Devices)
+        {
+            clock.Register(device.Step);
+        }
     }
 
     public void Step(double dt)

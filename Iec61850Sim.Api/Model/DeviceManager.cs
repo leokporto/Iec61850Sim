@@ -1,5 +1,7 @@
 
-namespace Iec61850Sim.Api.Model.Devices;
+using Iec61850Sim.Api.Model.Devices;
+
+namespace Iec61850Sim.Api.Model;
 
 public class DeviceManager
 {

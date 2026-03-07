@@ -1,7 +1,6 @@
-using IEC61850.Common;
-using Iec61850Sim.Api.Core.Model;
-using Iec61850Sim.Api.Model;
 using Iec61850Sim.Api.Model.Devices;
+
+namespace Iec61850Sim.Api.Model;
 
 public class DeviceBuilder
 {

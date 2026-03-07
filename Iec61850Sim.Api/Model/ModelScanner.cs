@@ -1,5 +1,4 @@
 using IEC61850.Server;
-using Iec61850Sim.Api.Core.Model;
 using Iec61850Sim.Api.Model;
 
 namespace Iec61850Sim.Api.Model;

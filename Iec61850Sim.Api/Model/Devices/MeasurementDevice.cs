@@ -13,6 +13,10 @@ public class MeasurementDevice : DeviceBase
     public override void Step(double dt)
     {
         foreach (var p in measurements)
+        {
             p.Value = 100 + Random.Shared.NextDouble() * 10;
+            
+            //Console.WriteLine($"{p.Reference} = {p.Value}");
+        }
     }
 }

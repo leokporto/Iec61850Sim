@@ -1,7 +1,9 @@
 using IEC61850.Server;
-using Iec61850Sim.Api.Core.Model;
+using Iec61850Sim.Api.Core;
+using Iec61850Sim.Api.Iec61850;
 using Iec61850Sim.Api.Model;
 using Iec61850Sim.Api.Model.Devices;
+using Iec61850Sim.Api.Services;
 
 namespace Iec61850Sim.Api;
 
@@ -11,25 +13,12 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-        builder.Services.AddOpenApi();
-
-        var app = builder.Build();
-
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
-        {
-            app.MapOpenApi();
-        }
-
         //carregar modelo IEC61850 
         var cfgPath = Path.Combine(
             AppContext.BaseDirectory,
             "Demo_Ed2.cfg");
 
         var model = ConfigFileParser.CreateModelFromConfigFile(cfgPath);
-        
-
         if (model == null)
         {
             Console.WriteLine("No valid data model found");
@@ -37,39 +26,50 @@ public class Program
         }
 
         model.SetIedName("Demo");
+        
+        // Add DI references
+        builder.Services.AddSingleton(model);
+        builder.Services.AddSingleton<PointRegistry>();
+        builder.Services.AddSingleton<DeviceManager>();
+        builder.Services.AddSingleton<SimulationClock>();
+        builder.Services.AddSingleton<SimulationEngine>();
+        builder.Services.AddSingleton<IecServerHost>();
+        
+        //Add background services
+        builder.Services.AddHostedService<SimulationService>();
+        
+        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+        builder.Services.AddOpenApi();
+
+        
+        
+        var app = builder.Build();
+        
+        // Configure the HTTP request pipeline.
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapOpenApi();
+        }
+
+        var currentModel = app.Services.GetRequiredService<IedModel>();
 
         //criar registry
-        var registry = new PointRegistry();
-
+        var registry = app.Services.GetRequiredService<PointRegistry>();
+        
         //scan do modelo
         var scanner = new ModelScanner();
 
-        scanner.Scan(model, registry, new List<string> { "Measurement", "ProtCtrl" });
-
-        Console.WriteLine($"Points discovered: {registry.All.Count()}");
+        scanner.Scan(currentModel, registry, new List<string> { "Measurement", "ProtCtrl" });
         
-        // criar device manager
-        var deviceManager = new DeviceManager();
-
-        //construir devices
+        // Separacao por devices para simulacao
+        var deviceManager = app.Services.GetRequiredService<DeviceManager>();
         var builderDevices = new DeviceBuilder();
 
         builderDevices.Build(registry, deviceManager);
 
-        Console.WriteLine($"Breakers: {deviceManager.Breakers.Count}");
-        Console.WriteLine($"Measurements: {deviceManager.Measurements.Count}");
+        Console.WriteLine($"Devices loaded: {deviceManager.Devices.Count}");
 
-        // só para teste
-        foreach (var b in deviceManager.Breakers)
-        {
-            Console.WriteLine($"Breaker detected: {b.Name}");
-        }
-
-        foreach (var m in deviceManager.Measurements)
-        {
-            Console.WriteLine($"Measurement detected: {m.Name}");
-        }
-
+        
 
         app.Run();
     }

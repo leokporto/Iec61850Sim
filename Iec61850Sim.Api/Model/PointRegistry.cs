@@ -1,7 +1,6 @@
 using IEC61850.Common;
-using Iec61850Sim.Api.Model;
 
-namespace Iec61850Sim.Api.Core.Model;
+namespace Iec61850Sim.Api.Model;
 
 /// <summary>
 /// Registers and maintains device Points
