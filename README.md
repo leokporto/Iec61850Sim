@@ -152,4 +152,9 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 
 ## 🧩 License
 
-Include your preferred license information here.
+This project is licensed under the GNU GPL v3 license.
+
+This project uses the library libiec61850:
+https://github.com/mz-automation/libiec61850
+
+libiec61850 is licensed under the GNU GPL v3.
