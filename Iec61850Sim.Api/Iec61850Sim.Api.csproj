@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="iec61850dotnet">
+        <HintPath>..\ThirdPartyRefs\iec61850dotnet.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Iec61850\ModelInspector\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="Iec61850\ModelInspector\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Remove="Iec61850\ModelInspector\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Iec61850\ModelInspector\**" />
+      <None Update="Config\Demo_Ed2.cfg">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Config\Demo_Ed2.icd">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Config\rfc1006.cfg">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Config\" />
+    </ItemGroup>
+
+</Project>
