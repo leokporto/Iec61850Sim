@@ -1,0 +1,25 @@
+@using Iec61850Sim.Web.Model.Devices
+@inject DeviceManager manager
+
+<h3></h3>
+
+<table class="table table-sm table-striped">
+    <thead>
+    <tr>
+        <th>Reference</th>
+        <th>Value</th>
+        <th>Timestamp</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    @foreach (DevicePoint point in SelectedDevice.)
+    {
+        <tr>
+            <td>@point.Reference</td>
+            <td>@point.Value</td>
+            <td>@point.Timestamp.ToString("HH:mm:ss.fff")</td>
+        </tr>
+    }
+    </tbody>
+</table>

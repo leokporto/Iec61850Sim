@@ -1,4 +1,4 @@
 <Solution>
   <Project Path="Iec61850Sim.Api/Iec61850Sim.Api.csproj" />
-  <Project Path="Iec61850Sim/Iec61850Sim.csproj" />
+  <Project Path="Iec61850Sim.Web/Iec61850Sim.Web.csproj" />
 </Solution>

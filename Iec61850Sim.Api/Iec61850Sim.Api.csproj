@@ -30,19 +30,15 @@
 
     <ItemGroup>
       <None Remove="Iec61850\ModelInspector\**" />
+      <None Update="Config\rfc1006.cfg">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
       <None Update="Config\Demo_Ed2.cfg">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Config\Demo_Ed2.icd">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Config\rfc1006.cfg">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Config\" />
     </ItemGroup>
 
 </Project>
