@@ -1,3 +1,4 @@
+using Iec61850Sim.Web.Iec61850;
 using Iec61850Sim.Web.Model.Devices;
 
 namespace Iec61850Sim.Web.Model;
@@ -10,48 +11,32 @@ public class DeviceBuilder
         BuildMeasurements(registry, manager);
     }
 
-    void BuildBreakers(PointRegistry registry, DeviceManager manager)
+    private void BuildBreakers(PointRegistry registry, DeviceManager manager)
     {
-        var breakerPoints = registry.All
-            .Where(p =>
-                p.Reference.Contains("Pos.stVal") &&
-                ExtractLogicalNode(p.Reference).Contains("XCBR"));
+        var groups = registry.All
+            .Where(p => p.LnType == eLnType.XCBR && p.DataObject == "Pos")
+            .GroupBy(p => p.LogicalNode);
 
-        foreach (var p in breakerPoints)
+        foreach (var g in groups)
         {
-            var ln = ExtractLogicalNode(p.Reference);
-
-            var breaker = new Breaker(ln, p);
+            var point = g.First(x => x.Reference.Contains("stVal"));
+            var breaker = new Breaker(g.Key, point);
 
             manager.Register(breaker);
         }
     }
 
-    void BuildMeasurements(PointRegistry registry, DeviceManager manager)
+    private void BuildMeasurements(PointRegistry registry, DeviceManager manager)
     {
         var groups = registry.All
-            .Where(p =>
-                ExtractLogicalNode(p.Reference).Contains("MMXU"))
-            .GroupBy(p => ExtractLogicalNode(p.Reference));
+            .Where(p => p.LnType == eLnType.MMXU)
+            .GroupBy(p => p.LogicalNode);
 
-        foreach (var g in groups)
+        foreach (var group in groups)
         {
-            var device = new MeasurementDevice(g.Key, g);
+            var device = new MeasurementDevice(group.Key, group);
 
             manager.Register(device);
         }
-    }
-
-
-    string ExtractLogicalNode(string reference)
-    {
-        var parts = reference.Split('/');
-
-        if (parts.Length < 2)
-            return "";
-
-        var lnPart = parts[1];
-
-        return lnPart.Split('.')[0];
     }
 }

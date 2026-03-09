@@ -1,12 +1,14 @@
 @using Iec61850Sim.Web.Model.Devices
 @inject PointRegistry registry
 
-<h3></h3>
+<h3>Medidas</h3>
 
-<table class="table table-sm table-striped">
+<table class="table table-sm table-striped table-borderless">
     <thead>
     <tr>
         <th>Reference</th>
+        <th>LogicalNode</th>
+        <th>DataObject</th>
         <th>Value</th>
         <th>Timestamp</th>
     </tr>
@@ -15,10 +17,12 @@
     <tbody>
     @foreach (DevicePoint point in Measures)
     {
-        <tr>
+        <tr @key="point.Reference">
             <td>@point.Reference</td>
+            <td>@point.LogicalNode</td>
+            <td>@point.DataObject</td>
             <td>@point.Value</td>
-            
+            <td>@point.Timestamp.ToLocalTime()</td>
         </tr>
     }
     </tbody>

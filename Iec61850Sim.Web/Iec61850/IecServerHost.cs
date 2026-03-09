@@ -1,3 +1,4 @@
+using IEC61850.Common;
 using IEC61850.Server;
 using Iec61850Sim.Web.Core;
 using Iec61850Sim.Web.Model;
@@ -41,27 +42,32 @@ public class IecServerHost
     {
         foreach (var point in registry.All)
         {
-            if (point.Value == null)
+            if (point.Value == null || point.ValueAttribute == null)
                 continue;
 
             switch (point.Value)
             {
                 case float f:
-                    server.UpdateFloatAttributeValue(point.Attribute, f);
+                    server.UpdateFloatAttributeValue(point.ValueAttribute, f);
                     break;
 
                 case double d:
-                    server.UpdateFloatAttributeValue(point.Attribute, (float)d);
+                    server.UpdateFloatAttributeValue(point.ValueAttribute, (float)d);
                     break;
 
                 case int i:
-                    server.UpdateInt32AttributeValue(point.Attribute, i);
+                    server.UpdateInt32AttributeValue(point.ValueAttribute, i);
                     break;
 
                 case bool b:
-                    server.UpdateBooleanAttributeValue(point.Attribute, b);
+                    server.UpdateBooleanAttributeValue(point.ValueAttribute, b);
                     break;
             }
+            
+            if(point.Timestamp != null)
+                server.UpdateTimestampAttributeValue(point.TimestampAttribute, 
+                    new Timestamp(point.Timestamp.DateTime));
+            
         }
     }
 }
