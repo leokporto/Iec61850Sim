@@ -1,5 +1,5 @@
 @using Iec61850Sim.Web.Model.Devices
-@inject DeviceManager manager
+@inject PointRegistry registry
 
 <h3></h3>
 
@@ -13,12 +13,12 @@
     </thead>
 
     <tbody>
-    @foreach (DevicePoint point in SelectedDevice.)
+    @foreach (DevicePoint point in Measures)
     {
         <tr>
             <td>@point.Reference</td>
             <td>@point.Value</td>
-            <td>@point.Timestamp.ToString("HH:mm:ss.fff")</td>
+            
         </tr>
     }
     </tbody>
