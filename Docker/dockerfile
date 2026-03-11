@@ -1,0 +1,22 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+
+WORKDIR /src
+
+COPY Iec61850Sim.Web/ Iec61850Sim.Web/
+COPY ThirdPartyRefs/ ThirdPartyRefs/
+
+WORKDIR /src/Iec61850Sim.Web
+
+RUN dotnet publish -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+
+WORKDIR /app
+
+COPY --from=build /app/publish .
+COPY ThirdPartyRefs/iec61850.so /app/iec61850.so
+
+EXPOSE 5000
+EXPOSE 102
+
+ENTRYPOINT ["dotnet", "Iec61850Sim.Web.dll"]
