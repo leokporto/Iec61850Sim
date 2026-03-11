@@ -1,5 +1,6 @@
 using IEC61850.Server;
 using Iec61850Sim.Core.Biz.Device;
+using Iec61850Sim.Core.Model.Devices;
 
 namespace Iec61850Sim.Core.Biz.Points;
 
@@ -40,5 +41,5 @@ public class PointBinder
                 },
                 null);
         }
-    }
+    }    
 }

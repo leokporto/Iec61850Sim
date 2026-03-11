@@ -1,6 +1,9 @@
+using IEC61850.Client;
 using IEC61850.Common;
 using IEC61850.Server;
+using Iec61850Sim.Core.Biz.Commands;
 using Iec61850Sim.Core.Biz.Points;
+using System.Diagnostics;
 
 
 namespace Iec61850Sim.Core.Iec61850;
@@ -9,8 +12,9 @@ public class IecServerHost
 {
     private readonly IedServer server;
     private readonly PointRegistry registry;
+    private readonly ControlCommandProcessor commandProcessor;
 
-    public IecServerHost(IedModel model, PointRegistry registry)
+    public IecServerHost(IedModel model, PointRegistry registry, ControlCommandProcessor commandProcessor)
     {
         this.registry = registry;
 
@@ -18,8 +22,12 @@ public class IecServerHost
         config.ReportBufferSize = 100000;
 
         server = new IedServer(model, config);
+
+        this.commandProcessor = commandProcessor;
+
+        RegisterControlHandlers();
     }
-    
+
     public IedServer Server => server;
 
     public void Start(int port = 102)
@@ -70,4 +78,38 @@ public class IecServerHost
             
         }
     }
+
+    private void RegisterControlHandlers()
+    {
+        //var operPoints = registry.All
+        //    .Where(p => p.Fc == FunctionalConstraint.CO &&
+        //                p.DataObject == "Pos");
+
+        //foreach (var p in operPoints)
+        //{
+        //    var dataObject = (DataObject)p.ValueAttribute.GetParent();
+
+        //    //server.SetCheckHandler(dataObject, CheckHandler, dataObject);
+        //    //server.SetControlHandler(dataObject, ControlHandler, dataObject);
+        //    //server.SetSelectStateChangedHandler(dataObject, SelectStateChanged, dataObject);
+        //}
+    }
+
+    private ControlHandlerResult ControlHandler(object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
+    {
+        var dataObject = (DataObject)parameter;
+
+        return commandProcessor.Operate(dataObject, ctlVal, test);
+    }
+
+    private CheckHandlerResult CheckHandler(object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
+    {
+        return CheckHandlerResult.ACCEPTED;
+    }
+
+    private void SelectStateChanged(object parameter, bool selected, ClientConnection connection)
+    {
+    }
+
+    
 }

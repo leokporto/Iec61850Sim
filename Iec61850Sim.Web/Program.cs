@@ -1,5 +1,6 @@
 using IEC61850.Server;
 using Iec61850Sim.Core.Biz;
+using Iec61850Sim.Core.Biz.Commands;
 using Iec61850Sim.Core.Biz.Device;
 using Iec61850Sim.Core.Biz.Model;
 using Iec61850Sim.Core.Biz.Points;
@@ -67,7 +68,12 @@ public class Program
         builder.Services.AddSingleton<DeviceManager>();
         builder.Services.AddSingleton<SimulationClock>();
         builder.Services.AddSingleton<SimulationEngine>();
+
+        builder.Services.AddSingleton<CommandBinder>();
+        builder.Services.AddSingleton<ControlCommandProcessor>();
+
         builder.Services.AddSingleton<IecServerHost>();
+        
 
         builder.Services.AddSingleton<RuntimeEngine>();
 

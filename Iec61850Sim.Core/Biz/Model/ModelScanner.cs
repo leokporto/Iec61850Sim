@@ -7,6 +7,32 @@ namespace Iec61850Sim.Core.Biz.Model;
 
 public class ModelScanner
 {
+    static readonly HashSet<string> ValueNames =
+    [
+        "stVal",
+        "ctlVal",
+        "setVal",
+        "mag",
+        "instMag",
+        "f"
+    ];
+
+    private static readonly Dictionary<string, eLnType> KnownLnTypes =
+        new()
+        {
+            ["MMXU"] = eLnType.MMXU,
+            ["XCBR"] = eLnType.XCBR,
+            ["XSWI"] = eLnType.XSWI,
+            ["CSWI"] = eLnType.CSWI,
+            ["GGIO"] = eLnType.GGIO,
+            ["PTOC"] = eLnType.PTOC,
+            ["PTRC"] = eLnType.PTRC,
+            ["PDIS"] = eLnType.PDIS,
+            ["CILO"] = eLnType.CILO,
+            ["LLN0"] = eLnType.LLN0,
+            ["LPHD"] = eLnType.LPHD
+        };
+
     public void Scan(IedModel model, PointRegistry registry, IEnumerable<string> logicalDevices)
     {
         var points = new Dictionary<string, DevicePoint>();
@@ -50,7 +76,8 @@ public class ModelScanner
             out var ld,
             out var ln,
             out var lnType,
-            out var dataObject);
+            out var dataObject,
+            out var equipmentName);
 
         var reference = da.GetObjectReference();
         var baseReference = $"{ld}/{ln}.{dataObject}";
@@ -64,7 +91,9 @@ public class ModelScanner
                 LogicalDevice = ld,
                 LogicalNode = ln,
                 LnType = lnType,
-                DataObject = dataObject
+                DataObject = dataObject,
+                EquipmentName = equipmentName,
+                Fc = da.FC
             };
 
             points[baseReference] = point;
@@ -78,12 +107,14 @@ public class ModelScanner
         out string logicalDevice,
         out string logicalNode,
         out eLnType lnType,
-        out string dataObject)
+        out string dataObject,
+        out string equipmentName)
     {
         logicalDevice = "";
         logicalNode = "";
         lnType = eLnType.Unknown;
         dataObject = "";
+        equipmentName = "";
 
         ModelNode current = da;
 
@@ -100,6 +131,7 @@ public class ModelScanner
                 case LogicalNode ln:
                     logicalNode = ln.GetName();
                     lnType = ExtractLnType(logicalNode);
+                    equipmentName = ExtractEquipment(logicalNode);
 
                     if (ln.GetParent() is LogicalDevice ld)
                         logicalDevice = ld.GetName();
@@ -109,16 +141,7 @@ public class ModelScanner
 
             current = current.GetParent();
         }
-    }
-    static readonly HashSet<string> ValueNames =
-    [
-        "stVal",
-        "ctlVal",
-        "setVal",
-        "mag",
-        "instMag",
-        "f"
-    ];
+    }    
 
     private static void ClassifyAttribute(DevicePoint point, DataAttribute da)
     {
@@ -146,6 +169,7 @@ public class ModelScanner
 
         point.OtherAttributes.Add(da);
     }
+
     private static eLnType ExtractLnType(string logicalNode)
     {
         foreach (var kv in KnownLnTypes)
@@ -156,189 +180,24 @@ public class ModelScanner
 
         return eLnType.Unknown;
     }
-    private static readonly Dictionary<string, eLnType> KnownLnTypes =
-        new()
-        {
-            ["MMXU"] = eLnType.MMXU,
-            ["XCBR"] = eLnType.XCBR,
-            ["XSWI"] = eLnType.XSWI,
-            ["CSWI"] = eLnType.CSWI,
-            ["GGIO"] = eLnType.GGIO,
-            ["PTOC"] = eLnType.PTOC,
-            ["PTRC"] = eLnType.PTRC,
-            ["PDIS"] = eLnType.PDIS,
-            ["CILO"] = eLnType.CILO,
-            ["LLN0"] = eLnType.LLN0,
-            ["LPHD"] = eLnType.LPHD
-        };
 
-}
-
-/*
- 
-public class ModelScanner
-{
-    public void Scan(IedModel model, PointRegistry registry, IEnumerable<string> logicalDevices)
+    //Equipment is the part of logica node before the LnType, e.g. QA1XCBR -> QA1
+    private static string ExtractEquipment(string logicalNode)
     {
-        var points = new Dictionary<string, DevicePoint>();
-
-        foreach (var ldName in logicalDevices)
+        var lnTypeIndex = logicalNode.Length;
+        foreach (var kv in KnownLnTypes)
         {
-            var ld = model.GetDeviceByInst(ldName);
-
-            if (ld == null)
-                continue;
-
-            ScanNode(ld, points);
-        }
-
-        foreach (var p in points.Values)
-            registry.Register(p);
-    }
-
-    private void ScanNode(ModelNode node, Dictionary<string, DevicePoint> points)
-    {
-        var children = node.GetChildren();
-
-        if (children == null)
-            return;
-
-        foreach (ModelNode child in children)
-        {
-            if (child is DataAttribute da)
+            var index = logicalNode.IndexOf(kv.Key, StringComparison.Ordinal);
+            if (index >= 0 && index < lnTypeIndex)
             {
-                var childNodes = da.GetChildren();
-
-                // Apenas folhas
-                if (childNodes == null || !childNodes.Any())
-                    ProcessLeafAttribute(da, points);
+                lnTypeIndex = index;
+                break;
             }
-
-            ScanNode(child, points);
         }
+
+        return logicalNode.Substring(0, lnTypeIndex);
     }
+    
 
-    private void ProcessLeafAttribute(DataAttribute da, Dictionary<string, DevicePoint> points)
-    {
-        var reference = da.GetObjectReference();
-
-        ParseReference(reference,
-            out var ld,
-            out var ln,
-            out var lnType,
-            out var dataObject);
-
-        var baseReference = $"{ld}/{ln}.{dataObject}";
-
-        if (!points.TryGetValue(baseReference, out var point))
-        {
-            
-            point = new DevicePoint
-            {
-                Reference = reference,
-                BaseReference = baseReference,
-                LogicalDevice = ld,
-                LogicalNode = ln,
-                LnType = lnType,
-                DataObject = dataObject
-            };
-
-            points[baseReference] = point;
-        }
-
-        var type = da.Type;
-
-        if (type == DataAttributeType.QUALITY)
-        {
-            point.QualityAttribute = da;
-            return;
-        }
-
-        if (type == DataAttributeType.TIMESTAMP)
-        {
-            point.TimestampAttribute = da;
-            return;
-        }
-
-        if (IsNumeric(type))
-        {
-            point.ValueAttribute ??= da;
-            return;
-        }
-
-        point.OtherAttributes.Add(da);
-    }
-
-    private static bool IsNumeric(DataAttributeType type)
-    {
-        return type == DataAttributeType.FLOAT32 ||
-               type == DataAttributeType.FLOAT64 ||
-               type == DataAttributeType.INT8 ||
-               type == DataAttributeType.INT16 ||
-               type == DataAttributeType.INT32 ||
-               type == DataAttributeType.INT64 ||
-               type == DataAttributeType.INT8U ||
-               type == DataAttributeType.INT16U ||
-               type == DataAttributeType.INT32U;
-    }
-
-    private static void ParseReference(
-        string reference,
-        out string logicalDevice,
-        out string logicalNode,
-        out eLnType lnType,
-        out string dataObject)
-    {
-        logicalDevice = "";
-        logicalNode = "";
-        lnType = eLnType.Unknown;
-        dataObject = "";
-
-        var parts = reference.Split('/');
-
-        if (parts.Length < 2)
-            return;
-
-        logicalDevice = parts[0];
-
-        var nodeParts = parts[1].Split('.');
-
-        if (nodeParts.Length == 0)
-            return;
-
-        logicalNode = nodeParts[0];
-
-        lnType = ExtractLnType(logicalNode);
-
-        if (nodeParts.Length > 1)
-            dataObject = nodeParts[1];
-    }
-
-    private static readonly Dictionary<string, eLnType> KnownLnTypes =
-        new()
-        {
-            ["MMXU"] = eLnType.MMXU,
-            ["XCBR"] = eLnType.XCBR,
-            ["XSWI"] = eLnType.XSWI,
-            ["CSWI"] = eLnType.CSWI,
-            ["GGIO"] = eLnType.GGIO,
-            ["PTOC"] = eLnType.PTOC,
-            ["PTRC"] = eLnType.PTRC,
-            ["PDIS"] = eLnType.PDIS,
-            ["CILO"] = eLnType.CILO,
-            ["LLN0"] = eLnType.LLN0,
-            ["LPHD"] = eLnType.LPHD
-        };
-
-    private static eLnType ExtractLnType(string logicalNode)
-    {
-        foreach (var kv in KnownLnTypes)
-        {
-            if (logicalNode.Contains(kv.Key))
-                return kv.Value;
-        }
-
-        return eLnType.Unknown;
-    }
 }
-*/
+
