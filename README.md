@@ -75,6 +75,17 @@ dotnet publish -c Release -r win-x64 --self-contained true
 
 After publishing, you can execute the `Iec61850.Web.exe` file to run the application without using any IDE.
 
+
+**Wpf with WebView2 (Windows only)**
+
+The project Iec61850Sim.Desktop is a Wpf project containing just a window with WebView2 control. 
+
+It is possible to publish it by running the following command:
+
+```bash
+dotnet publish Iec61850Sim.Web -c Release -r win-x64
+```
+
 ---
 
 ## 🏗️ Application Model

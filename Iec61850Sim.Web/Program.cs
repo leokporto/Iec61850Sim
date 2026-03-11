@@ -1,4 +1,5 @@
 using IEC61850.Server;
+using Iec61850Sim.Core.Biz;
 using Iec61850Sim.Core.Biz.Device;
 using Iec61850Sim.Core.Biz.Model;
 using Iec61850Sim.Core.Biz.Points;
@@ -13,27 +14,53 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        var app = BuildApp(args);
+
+        if (app == null)
+        {
+            Console.Write("Unable to start application: Loading failed.");
+            return;
+        }
+
+        app.Run();
+    }
+
+    public static WebApplication? BuildApp(string[] args)
+    {
+        //var options = new WebApplicationOptions
+        //{
+        //    ContentRootPath = AppContext.BaseDirectory,
+        //    WebRootPath = "wwwroot"
+        //};
+
         var builder = WebApplication.CreateBuilder(args);
+
+        
+
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
+        builder.WebHost.UseStaticWebAssets();
+
+        builder.WebHost.UseUrls("http://localhost:8080");
+
         var modelPath = Environment.GetEnvironmentVariable("IEC_MODEL")
                ?? "./Config/Demo_Ed2.cfg";
 
         //carregar modelo IEC61850 
-        var cfgPath = Path.Combine(AppContext.BaseDirectory,modelPath);
+        var cfgPath = Path.Combine(AppContext.BaseDirectory, modelPath);
 
         var model = ConfigFileParser.CreateModelFromConfigFile(cfgPath);
         if (model == null)
         {
             Console.WriteLine("No valid data model found");
-            return;
+            return null;
         }
 
         model.SetIedName("Demo");
-        
+
         // Add DI references
         builder.Services.AddSingleton(model);
         builder.Services.AddSingleton<PointRegistry>();
@@ -42,11 +69,11 @@ public class Program
         builder.Services.AddSingleton<SimulationEngine>();
         builder.Services.AddSingleton<IecServerHost>();
 
-        builder.Services.AddSingleton<SimulatorRuntime>();
-        
+        builder.Services.AddSingleton<RuntimeEngine>();
+
         //Add background services
         builder.Services.AddHostedService<SimulationService>();
-        
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -78,14 +105,16 @@ public class Program
 
         Console.WriteLine($"Devices loaded: {deviceManager.Devices.Count}");
 
-        
+
         app.UseAntiforgery();
-        
+
 
         app.MapStaticAssets();
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
 
-        app.Run();
+        return app;
     }
+
+    
 }

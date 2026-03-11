@@ -1,32 +1,111 @@
 ﻿@page "/"
 
 @using Iec61850Sim.Web.Components.Controls
-@inject Iec61850Sim.Core.Biz.Simulation.SimulatorRuntime RuntimeSim
+@inject Iec61850Sim.Core.Biz.RuntimeEngine RunEngine
 
 <PageTitle>Home</PageTitle>
 
-<h1>Iec61850 tiny sim</h1>
+<h3>Iec61850 tiny sim</h3>
 
 <p>
-    Bem vindo ao pequeno simulador de 61850. 
-
-    Navegue pelo filtro para selecionar os pontos apenas de um determinado Logical device ou logical node.
+    Bem vindo ao pequeno simulador de IEC61850.
 </p>
 
-<div class="container card">
-    <label>Logical Device:</label><InputText @bind-Value="@LogicalDevice" />
-    <label>Logical Device:</label><InputText @bind-Value="@LogicalNode" />
-</div>
+<div class="container-fluid">
 
-<div class="container">
-    <button class="btn btn-primary" @onclick="StartSim">Start</button>
-    <button class="btn btn-secondary" @onclick="StopSim">Stop</button>
-</div>
+    <!-- Top controls -->
+    <div class="row g-3 mb-3">
 
-<br />
+        <!-- Server operations -->
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    Server
+                </div>
+                <div class="card-body d-grid gap-2">
 
-<div class="container">
-    <MeasuresGrid LogicalDevice="@LogicalDevice" LogicalNode="@LogicalNode" />
+                    <button class="btn btn-success btn-sm"
+                            @onclick="StartServer">
+                        Start
+                    </button>
+
+                    <button class="btn btn-danger btn-sm"
+                            @onclick="StopServer">
+                        Stop
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation operations -->
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    Simulation
+                </div>
+                <div class="card-body d-grid gap-2">
+
+                    <button class="btn btn-success btn-sm"
+                            @onclick="StartSimulation">
+                        Start
+                    </button>
+
+                    <button class="btn btn-danger btn-sm"
+                            @onclick="StopSimulation">
+                        Stop
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    Filter
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row mb-2">
+                        <div class="col-4">
+                            Logical Device
+                        </div>
+                        <div class="col-8">
+                            <InputText class="form-control form-control-sm"
+                                       @bind-Value="LogicalDevice" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-4">
+                            Logical Node
+                        </div>
+                        <div class="col-8">
+                            <InputText class="form-control form-control-sm"
+                                       @bind-Value="LogicalNode" />
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Measures grid -->
+
+    <div class="row">
+        <div class="col-12">
+
+            <MeasuresGrid LogicalDevice="@LogicalDevice"
+                          LogicalNode="@LogicalNode" />
+
+        </div>
+    </div>
+
 </div>
 
 @code
@@ -34,13 +113,23 @@
     private string LogicalDevice = "";
     private string LogicalNode = "";
 
-    private void StartSim(MouseEventArgs args)
+    void StartServer()
     {
-        RuntimeSim.Start();
+        RunEngine.StartServer();
     }
 
-    private void StopSim(MouseEventArgs args)
+    void StartSimulation()
     {
-        RuntimeSim.Stop();
+        RunEngine.StartSimulation();
+    }
+
+    void StopSimulation()
+    {
+        RunEngine.StopSimulation();
+    }
+
+    void StopServer()
+    {
+        RunEngine.StopServer();
     }
 }

@@ -1,20 +1,23 @@
 ﻿using IEC61850.Server;
 using Iec61850Sim.Core.Biz.Device;
 using Iec61850Sim.Core.Biz.Points;
+using Iec61850Sim.Core.Biz.Simulation;
 using Iec61850Sim.Core.Iec61850;
 
-namespace Iec61850Sim.Core.Biz.Simulation;
+namespace Iec61850Sim.Core.Biz;
 
-public class SimulatorRuntime
+public class RuntimeEngine
 {
     private readonly SimulationEngine simulation;
     private readonly IecServerHost iecHost;
     private readonly DeviceManager devices;
     private readonly IedModel model;
 
-    public bool Running { get; private set; }
+    public bool SimulationRunning { get; private set; }
+    public bool ServerRunning { get; private set; }
 
-    public SimulatorRuntime(
+
+    public RuntimeEngine(
         IedModel model,
         DeviceManager devices,
         SimulationEngine simulation,
@@ -26,9 +29,9 @@ public class SimulatorRuntime
         this.iecHost = iecHost;
     }
 
-    public void Start()
+    public void StartServer()
     {
-        if (Running)
+        if (ServerRunning)
             return;
 
         iecHost.Start(102);
@@ -36,26 +39,48 @@ public class SimulatorRuntime
         var binder = new PointBinder();
         binder.Bind(model, devices, iecHost.Server);
 
-        Running = true;
+        ServerRunning = true;
+
+        Console.WriteLine("IEC server started");
+    }
+
+    public void StopServer()
+    {
+        if (!ServerRunning)
+            return;
+
+        iecHost.Stop();
+
+        ServerRunning = false;
+
+        Console.WriteLine("IEC server stopped");
+    }
+
+    public void StartSimulation()
+    {
+        if (!ServerRunning)
+            StartServer();
+
+        SimulationRunning = true;
 
         Console.WriteLine("Simulation started");
     }
 
-    public void Stop()
+    public void StopSimulation()
     {
-        if (!Running)
-            return;
+        SimulationRunning = false;
 
-        Running = false;
-
-        iecHost.Stop();
-
-        Console.WriteLine("Simulation stopped");
+        Console.WriteLine("Simulation stopped (server still running)");
     }
 
     public void Step(double dt)
     {
         simulation.Step(dt);
+    }
+
+    public void Publish()
+    {
         iecHost.Publish();
     }
+
 }

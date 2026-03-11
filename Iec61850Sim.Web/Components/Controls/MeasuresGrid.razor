@@ -8,7 +8,6 @@
     <tr>
         <th>Reference</th>
         <th>LogicalNode</th>
-        <th>DataObject</th>
         <th>Value</th>
         <th>Timestamp</th>
     </tr>
@@ -19,8 +18,7 @@
     {
         <tr @key="point.Reference">
             <td>@point.Reference</td>
-            <td>@point.LogicalNode</td>
-            <td>@point.DataObject</td>
+            <td>@point.LogicalNode</td>            
             <td>@point.Value</td>
             <td>@point.Timestamp.ToLocalTime()</td>
         </tr>
