@@ -44,7 +44,7 @@ public class Program
 
         builder.WebHost.UseStaticWebAssets();
 
-        builder.WebHost.UseUrls("http://localhost:8080");
+        builder.WebHost.UseUrls("http://0.0.0.0:8080");
 
         var modelPath = Environment.GetEnvironmentVariable("IEC_MODEL")
                ?? "./Config/Demo_Ed2.cfg";
