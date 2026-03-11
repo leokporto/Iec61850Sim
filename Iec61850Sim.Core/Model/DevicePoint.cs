@@ -1,8 +1,8 @@
 using IEC61850.Common;
 using IEC61850.Server;
-using Iec61850Sim.Web.Iec61850;
+using Iec61850Sim.Core.Iec61850;
 
-namespace Iec61850Sim.Web.Model;
+namespace Iec61850Sim.Core.Model;
 
 public class DevicePoint
 {

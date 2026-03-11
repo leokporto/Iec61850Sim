@@ -1,9 +1,9 @@
 using IEC61850.Common;
 using IEC61850.Server;
-using Iec61850Sim.Web.Core;
-using Iec61850Sim.Web.Model;
+using Iec61850Sim.Core.Biz.Points;
 
-namespace Iec61850Sim.Web.Iec61850;
+
+namespace Iec61850Sim.Core.Iec61850;
 
 public class IecServerHost
 {

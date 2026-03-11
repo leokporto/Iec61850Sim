@@ -1,4 +1,4 @@
-namespace Iec61850Sim.Web.Core;
+namespace Iec61850Sim.Core.Biz.Simulation;
 
 public class ScenarioEngine
 {

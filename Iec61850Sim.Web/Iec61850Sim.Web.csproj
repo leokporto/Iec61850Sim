@@ -8,6 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Iec61850Sim.Core\Iec61850Sim.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Reference Include="iec61850dotnet">
             <HintPath>..\ThirdPartyRefs\iec61850dotnet.dll</HintPath>
         </Reference>

@@ -32,6 +32,8 @@ dotnet build Iec61850Sim.Api/Iec61850Sim.Api.csproj
 
 ### 3) Run
 
+**Dev Environment:**
+
 ```bash
 dotnet run --project Iec61850Sim.Api/Iec61850Sim.Api.csproj
 ```
@@ -45,6 +47,33 @@ By default, the web application runs using the ASP.NET Core launch settings:
 At startup, the application also starts the **IEC 61850 server** on port **102**.
 
 To stop the application, press **Ctrl+C**.
+
+**Docker**
+
+Build an image:
+
+```bash
+docker build -f Docker/Dockerfile -t iec61850sim:latest .
+```
+
+Execute a container:
+
+```bash
+docker run -p 5000:8080 -p 102:102 leokporto/iec61850sim -r
+```
+
+:warning: **Warning:** To build an image toy will need to create a `ThirdPartyRefs` folder in the same level as docker and .net project folders and add `libiec61850.so`, `libiec61850.so.1.6.1` and `iec61850dotnet.dll` files to it. You can create those files following MZ-Automation's [github repo](https://github.com/mz-automation/libiec61850).
+
+
+**Self-hosted blazor app**
+
+Execute the publish command:
+
+```bash
+dotnet publish -c Release -r win-x64 --self-contained true
+```
+
+After publishing, you can execute the `Iec61850.Web.exe` file to run the application without using any IDE.
 
 ---
 

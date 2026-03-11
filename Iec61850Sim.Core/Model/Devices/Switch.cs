@@ -1,6 +1,4 @@
-using Iec61850Sim.Web.Model;
-
-namespace Iec61850Sim.Web.Model.Devices;
+namespace Iec61850Sim.Core.Model.Devices;
 
 public class Switch : DeviceBase
 {

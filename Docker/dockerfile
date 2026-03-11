@@ -2,6 +2,12 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
 
+COPY Iec61850Sim.Core/Iec61850Sim.Core.csproj Iec61850Sim.Core/
+COPY Iec61850Sim.Web/Iec61850Sim.Web.csproj Iec61850Sim.Web/
+
+RUN dotnet restore Iec61850Sim.Web/Iec61850Sim.Web.csproj
+
+COPY Iec61850Sim.Core/ Iec61850Sim.Core/
 COPY Iec61850Sim.Web/ Iec61850Sim.Web/
 COPY ThirdPartyRefs/ ThirdPartyRefs/
 
@@ -14,8 +20,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 
 COPY --from=build /app/publish .
-COPY ThirdPartyRefs/libiec61850.so /app/libiec61850.so
-COPY ThirdPartyRefs/libiec61850.so.1.6.1 /app/libiec61850.so.1.6.1
+COPY ThirdPartyRefs/libiec61850.so /app/
+COPY ThirdPartyRefs/libiec61850.so.1.6.1 /app/
 
 EXPOSE 8080
 EXPOSE 102

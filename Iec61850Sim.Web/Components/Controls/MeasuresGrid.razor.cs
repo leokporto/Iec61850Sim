@@ -1,6 +1,5 @@
-using Iec61850Sim.Web.Iec61850;
-using Iec61850Sim.Web.Model;
-using Iec61850Sim.Web.Model.Devices;
+using Iec61850Sim.Core.Iec61850;
+using Iec61850Sim.Core.Model;
 using Microsoft.AspNetCore.Components;
 
 namespace Iec61850Sim.Web.Components.Controls;

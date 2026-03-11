@@ -1,6 +1,7 @@
 using IEC61850.Common;
+using Iec61850Sim.Core.Model;
 
-namespace Iec61850Sim.Web.Model;
+namespace Iec61850Sim.Core.Biz.Points;
 
 /// <summary>
 /// Registers and maintains device Points

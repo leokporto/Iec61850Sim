@@ -1,8 +1,10 @@
 using IEC61850.Server;
+using Iec61850Sim.Core.Biz.Device;
+using Iec61850Sim.Core.Biz.Model;
+using Iec61850Sim.Core.Biz.Points;
+using Iec61850Sim.Core.Biz.Simulation;
+using Iec61850Sim.Core.Iec61850;
 using Iec61850Sim.Web.Components;
-using Iec61850Sim.Web.Core;
-using Iec61850Sim.Web.Iec61850;
-using Iec61850Sim.Web.Model;
 using Iec61850Sim.Web.Services;
 
 namespace Iec61850Sim.Web;

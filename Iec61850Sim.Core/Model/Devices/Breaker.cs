@@ -1,4 +1,4 @@
-namespace Iec61850Sim.Web.Model.Devices;
+namespace Iec61850Sim.Core.Model.Devices;
 
 public class Breaker : DeviceBase
 {

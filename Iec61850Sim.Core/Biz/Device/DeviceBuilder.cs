@@ -1,7 +1,8 @@
-using Iec61850Sim.Web.Iec61850;
-using Iec61850Sim.Web.Model.Devices;
+using Iec61850Sim.Core.Biz.Points;
+using Iec61850Sim.Core.Iec61850;
+using Iec61850Sim.Core.Model.Devices;
 
-namespace Iec61850Sim.Web.Model;
+namespace Iec61850Sim.Core.Biz.Device;
 
 public class DeviceBuilder
 {

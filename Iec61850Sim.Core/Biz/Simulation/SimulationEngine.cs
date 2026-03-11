@@ -1,8 +1,6 @@
+using Iec61850Sim.Core.Biz.Device;
 
-using Iec61850Sim.Web.Model;
-using Iec61850Sim.Web.Model.Devices;
-
-namespace Iec61850Sim.Web.Core;
+namespace Iec61850Sim.Core.Biz.Simulation;
 
 public class SimulationEngine
 {

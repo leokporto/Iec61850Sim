@@ -1,7 +1,7 @@
 using IEC61850.Server;
-using Iec61850Sim.Web.Model.Devices;
+using Iec61850Sim.Core.Biz.Device;
 
-namespace Iec61850Sim.Web.Model;
+namespace Iec61850Sim.Core.Biz.Points;
 
 public class PointBinder
 {

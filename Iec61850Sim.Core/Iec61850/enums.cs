@@ -1,4 +1,4 @@
-namespace Iec61850Sim.Web.Iec61850;
+namespace Iec61850Sim.Core.Iec61850;
 
 public enum eLnType
 {
