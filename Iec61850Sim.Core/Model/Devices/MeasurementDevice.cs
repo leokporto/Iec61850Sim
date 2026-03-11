@@ -19,7 +19,7 @@ public class MeasurementDevice : DeviceBase
             p.Value = 100 + Random.Shared.NextDouble() * 10;
             p.Timestamp = DateTimeOffset.Now.ToUniversalTime();
             
-            //  Console.WriteLine($"{p.Reference} = {p.Value}");
+              Console.WriteLine($"{p.Reference} = {p.Value}");
         }
     }
 }

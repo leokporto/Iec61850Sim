@@ -19,10 +19,11 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
+        var modelPath = Environment.GetEnvironmentVariable("IEC_MODEL")
+               ?? "./Config/Demo_Ed2.cfg";
+
         //carregar modelo IEC61850 
-        var cfgPath = Path.Combine(
-            AppContext.BaseDirectory,
-            "./Config/Demo_Ed2.cfg");
+        var cfgPath = Path.Combine(AppContext.BaseDirectory,modelPath);
 
         var model = ConfigFileParser.CreateModelFromConfigFile(cfgPath);
         if (model == null)
@@ -40,6 +41,8 @@ public class Program
         builder.Services.AddSingleton<SimulationClock>();
         builder.Services.AddSingleton<SimulationEngine>();
         builder.Services.AddSingleton<IecServerHost>();
+
+        builder.Services.AddSingleton<SimulatorRuntime>();
         
         //Add background services
         builder.Services.AddHostedService<SimulationService>();
@@ -55,20 +58,18 @@ public class Program
         }
 
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-        
 
-        app.UseAntiforgery();
 
         var currentModel = app.Services.GetRequiredService<IedModel>();
 
         //criar registry
         var registry = app.Services.GetRequiredService<PointRegistry>();
-        
+
         //scan do modelo
         var scanner = new ModelScanner();
 
         scanner.Scan(currentModel, registry, new List<string> { "Measurement", "ProtCtrl" });
-        
+
         // Separacao por devices para simulacao
         var deviceManager = app.Services.GetRequiredService<DeviceManager>();
         var builderDevices = new DeviceBuilder();
@@ -76,7 +77,11 @@ public class Program
         builderDevices.Build(registry, deviceManager);
 
         Console.WriteLine($"Devices loaded: {deviceManager.Devices.Count}");
+
         
+        app.UseAntiforgery();
+        
+
         app.MapStaticAssets();
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();

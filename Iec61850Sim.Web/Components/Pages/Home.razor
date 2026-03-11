@@ -1,6 +1,7 @@
 ﻿@page "/"
 
 @using Iec61850Sim.Web.Components.Controls
+@inject Iec61850Sim.Core.Biz.Simulation.SimulatorRuntime RuntimeSim
 
 <PageTitle>Home</PageTitle>
 
@@ -17,6 +18,11 @@
     <label>Logical Device:</label><InputText @bind-Value="@LogicalNode" />
 </div>
 
+<div class="container">
+    <button class="btn btn-primary" @onclick="StartSim">Start</button>
+    <button class="btn btn-secondary" @onclick="StopSim">Stop</button>
+</div>
+
 <br />
 
 <div class="container">
@@ -27,4 +33,14 @@
 {
     private string LogicalDevice = "";
     private string LogicalNode = "";
+
+    private void StartSim(MouseEventArgs args)
+    {
+        RuntimeSim.Start();
+    }
+
+    private void StopSim(MouseEventArgs args)
+    {
+        RuntimeSim.Stop();
+    }
 }
