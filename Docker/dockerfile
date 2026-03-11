@@ -14,9 +14,10 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 
 COPY --from=build /app/publish .
-COPY ThirdPartyRefs/iec61850.so /app/iec61850.so
+COPY ThirdPartyRefs/libiec61850.so /app/libiec61850.so
+COPY ThirdPartyRefs/libiec61850.so.1.6.1 /app/libiec61850.so.1.6.1
 
-EXPOSE 5000
+EXPOSE 8080
 EXPOSE 102
 
 ENTRYPOINT ["dotnet", "Iec61850Sim.Web.dll"]
