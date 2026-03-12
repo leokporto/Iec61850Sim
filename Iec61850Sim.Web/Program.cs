@@ -68,8 +68,6 @@ public class Program
         builder.Services.AddSingleton<DeviceManager>();
         builder.Services.AddSingleton<SimulationClock>();
         builder.Services.AddSingleton<SimulationEngine>();
-
-        builder.Services.AddSingleton<CommandBinder>();
         builder.Services.AddSingleton<ControlCommandProcessor>();
 
         builder.Services.AddSingleton<IecServerHost>();

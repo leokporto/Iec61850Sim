@@ -29,7 +29,7 @@ public class DevicePoint
 
     public object? Value { get; set; }
     public DateTimeOffset Timestamp { get; set; }
-    public Int32 Quality { get; set; } = 0;
+    public ushort Quality { get; set; } = 192;
     public Dictionary<string,object> OtherValues { get; } = new();
 
 }

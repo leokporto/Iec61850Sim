@@ -2,22 +2,18 @@
 using IEC61850.Server;
 using Iec61850Sim.Core.Iec61850;
 using Iec61850Sim.Core.Model.Devices;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Iec61850Sim.Core.Biz.Commands;
 
 public class ControlCommandProcessor
 {
-    private readonly CommandBinder binder;
-
-    public ControlCommandProcessor(CommandBinder binder)
+    
+    public ControlCommandProcessor()
     {
-        this.binder = binder;
+
     }
 
-    public ControlHandlerResult Operate(Cswi controller, MmsValue ctlVal, bool test)
+    public void Operate(Cswi controller, MmsValue ctlVal, bool test)
     {
         eDblPos pos;
 
@@ -31,6 +27,31 @@ public class ControlCommandProcessor
         }
 
         var breaker = controller.Breaker;
+        breaker.Position.Timestamp = DateTime.UtcNow;
+
+        switch (pos)
+        {
+            case eDblPos.Off:
+                breaker.Open();
+                break;
+
+            case eDblPos.On:
+                breaker.Close();
+                break;            
+        }
+
+        controller.CommandController.Value = breaker.Position.Value;
+        controller.CommandController.Timestamp = breaker.Position.Timestamp;
+        controller.Position.Value = breaker.Position.Value;
+        controller.Position.Timestamp = breaker.Position.Timestamp;        
+    }
+
+    public void Operate(Cswi controller, bool isSelected)
+    {
+        eDblPos pos = isSelected ? eDblPos.On : eDblPos.Off;        
+
+        var breaker = controller.Breaker;
+        breaker.Position.Timestamp = DateTime.UtcNow;
 
         switch (pos)
         {
@@ -41,11 +62,9 @@ public class ControlCommandProcessor
             case eDblPos.On:
                 breaker.Close();
                 break;
-
-            default:
-                return ControlHandlerResult.FAILED;
         }
 
-        return ControlHandlerResult.OK;
+        controller.Position.Value = breaker.Position.Value;
+        controller.Position.Timestamp = breaker.Position.Timestamp;
     }
 }

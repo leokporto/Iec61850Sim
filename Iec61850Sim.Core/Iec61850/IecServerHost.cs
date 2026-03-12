@@ -1,12 +1,10 @@
-using IEC61850.Client;
 using IEC61850.Common;
 using IEC61850.Server;
 using Iec61850Sim.Core.Biz.Commands;
 using Iec61850Sim.Core.Biz.Device;
 using Iec61850Sim.Core.Biz.Points;
-using Iec61850Sim.Core.Model;
 using Iec61850Sim.Core.Model.Devices;
-using System.Diagnostics;
+using static System.Net.Mime.MediaTypeNames;
 
 
 namespace Iec61850Sim.Core.Iec61850;
@@ -76,10 +74,17 @@ public class IecServerHost
                     break;
             }
             
-            if(point.TimestampAttribute != null)
-                server.UpdateTimestampAttributeValue(point.TimestampAttribute, 
-                    new Timestamp(point.Timestamp.DateTime));
-            
+            if(point.TimestampAttribute != null) {
+                var timestamp = point.Timestamp.UtcDateTime == DateTime.MinValue ? new Timestamp(DateTime.UtcNow) : new Timestamp(point.Timestamp.DateTime);
+                server.UpdateTimestampAttributeValue(point.TimestampAttribute, timestamp);
+            }
+                
+            if (point.QualityAttribute != null) 
+            {
+                server.UpdateQuality(point.QualityAttribute, point.Quality);
+            }
+
+
         }
     }
 
@@ -113,7 +118,12 @@ public class IecServerHost
     {
         var controller = (Cswi)parameter;
 
-        return commandProcessor.Operate(controller, ctlVal, test);
+        commandProcessor.Operate(controller, ctlVal, test);
+
+        
+
+        return ControlHandlerResult.OK;
+       
     }
 
     private CheckHandlerResult CheckHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
@@ -123,6 +133,13 @@ public class IecServerHost
 
     private void SelectStateChanged(ControlAction action, object parameter, bool isSelected, SelectStateChangedReason reason)
     {
+        DataObject cObj = action.GetControlObject();
+
+        var controller = (Cswi)parameter;
+
+        commandProcessor.Operate(controller, isSelected);
+
+        Publish();
     }
 
     

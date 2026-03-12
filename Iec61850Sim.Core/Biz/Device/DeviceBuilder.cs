@@ -48,23 +48,51 @@ public class DeviceBuilder
         
     }
 
+    //private void BuildControllers(PointRegistry registry, DeviceManager manager)
+    //{
+    //    var groups = registry.All
+    //        .Where(p => p.LnType == eLnType.CSWI && p.Fc == FunctionalConstraint.CO )
+    //        .GroupBy(p => p.LogicalNode);
+
+    //    foreach (var g in groups)
+    //    {
+    //        var bindPoint = g.First(); //XCBR STVAL
+
+    //        var breaker = manager.Breakers.FirstOrDefault(x => x.Position.EquipmentName.Equals(bindPoint.EquipmentName));
+    //        if (breaker == null || string.IsNullOrWhiteSpace(breaker.Name))
+    //        {                    
+    //            continue;
+    //        }
+
+    //        var cswi = new Cswi(g.Key, bindPoint, breaker);
+
+    //        manager.RegisterController(cswi);
+    //    }
+    //}
+
     private void BuildControllers(PointRegistry registry, DeviceManager manager)
     {
         var groups = registry.All
-            .Where(p => p.LnType == eLnType.CSWI && p.Fc == FunctionalConstraint.CO )
+            .Where(p => p.LnType == eLnType.CSWI)
             .GroupBy(p => p.LogicalNode);
 
         foreach (var g in groups)
         {
-            var point = g.First();
+            var cmdPoint = g.FirstOrDefault(p => p.Fc == FunctionalConstraint.CO);
+            var posPoint = g.FirstOrDefault(p => p.Fc == FunctionalConstraint.ST &&
+                                                 p.DataObject == "Pos" &&
+                                                 p.ValueAttribute != null);
 
-            var breaker = manager.Breakers.FirstOrDefault(x => x.Position.EquipmentName.Equals(point.EquipmentName));
-            if (breaker == null || string.IsNullOrWhiteSpace(breaker.Name))
-            {                    
+            if (cmdPoint == null || posPoint == null)
                 continue;
-            }
 
-            var cswi = new Cswi(g.Key, breaker);
+            var breaker = manager.Breakers
+                .FirstOrDefault(x => x.Position.EquipmentName.Equals(cmdPoint.EquipmentName));
+
+            if (breaker == null)
+                continue;
+
+            var cswi = new Cswi(g.Key, cmdPoint, posPoint, breaker);
 
             manager.RegisterController(cswi);
         }
