@@ -92,7 +92,7 @@ dotnet publish Iec61850Sim.Web -c Release -r win-x64
 
 This project should be treated as a **self-hosted web application**, not a console application.
 
-The runtime behavior is centered on the `Iec61850Sim.Api` project:
+The runtime behavior is centered on the `Iec61850Sim.Web` project:
 
 - ASP.NET Core hosts the application
 - A background hosted service runs the simulation loop
@@ -135,6 +135,34 @@ The application sets the IED name to:
 
 - `Demo`
 
+```xml
+<IED name="Demo" type="S61850 for PC" manufacturer="INFO TECH" configVersion="1.0" originalSclVersion="2007" originalSclRevision="B" originalSclRelease="4">
+...
+</IED>
+```
+
+Altough currently Ied Name is hard coded, there is already an item on backlog to geit it from configuration and pass it to *IedServer* instance.
+
+---
+
+## 📂 Project structure
+
+```markdown
+  Iec61850Sim.slnx          # Solution file
+  README.md                 
+  ConfigFiles/              # Config files folder (.cfg and SCL files)
+  Docker/                   # Docker files
+  Iec61850Sim.Core/         # Core functionalities, use cases
+  Iec61850Sim.Desktop/      # Wpf Webview2 project
+  Iec61850Sim.Web/          # Blazor Server App
+  ThirdPartyRefs/           # Mz-Automation libraries (iec61850dotnet.dll and iec61850.dll). *This folder was added to .gitignore file (licensing).*
+    linux/                  # Mz-Automation libraries (libiec61850.so and libiec61850.so.1.6.1)
+```
+
+> ⚠️ A raiz contém também o solution file e o README, mas os demais itens são apenas pastas.
+
+Se precisar de uma visão diferente (como uma árvore de diretórios gerada por comando), só avisar!
+
 ---
 
 ## 🔄 Simulation Behavior
@@ -157,13 +185,14 @@ The simulation loop runs continuously in the background with a timed delay betwe
 ## 🧩 Main Components
 
 - Web hosting
+- Wpf hosting with WebView2 (Windows only)
 - IEC 61850 server
 - Model scanning and binding
 - Device simulation
 - Background simulation loop
 - Configuration file loading
-- OpenAPI integration
 
+---
 
 ## 🌐 Web Hosting Notes
 
@@ -173,7 +202,6 @@ This application uses:
 - ASP.NET Core hosting model
 - Dependency Injection
 - Hosted background services
-- OpenAPI integration in Development
 
 Although the simulator’s core job is to host an IEC 61850 server, it now runs inside a web application host, which makes it easier to extend with HTTP APIs, diagnostics, health checks, or operational endpoints later.
 
@@ -181,11 +209,23 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 
 ---
 
+## 📝 Backlog
+
+- [ ] Commands Simulation
+- [ ] Parse scl files automatically
+- [ ] Discover Ied Server model
+- [ ] Add settings page
+- [ ] Better Simulation UI
+- [ ] Code refactoring
+- [ ] Upload Scl files (maybe). Those files can be passed to *ConfigFiles* folder either before the execution or over a container's image creation.
+
+---
+
 ## 📝 Notes
 
 - This is a lightweight simulator intended for testing and experimentation
 - It is not a complete IEC 61850 platform implementation
-- The current implementation source of truth is `Iec61850Sim.Api`
+- The current implementation source of truth is `Iec61850Sim.Core`
 - Older console-oriented documentation should no longer be considered deprecated
 
 ---
