@@ -10,16 +10,22 @@ public class MeasurementDevice : DeviceBase
         measurements = points.ToList();
     }
 
-    
-    
+
+
     public override void Step(double dt)
     {
+        var t = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+
         foreach (var p in measurements)
         {
-            p.Value = 100 + Random.Shared.NextDouble() * 10;
-            p.Timestamp = DateTimeOffset.Now.ToUniversalTime();
-            
-              Console.WriteLine($"{p.Reference} = {p.Value}");
+            double baseValue = 100;
+            double oscillation = Math.Sin(t / 10) * 5;
+            double noise = (Random.Shared.NextDouble() - 0.5) * 0.5;
+
+            p.Value = baseValue + oscillation + noise;
+            p.Timestamp = DateTimeOffset.UtcNow;
         }
+
+        //Console.WriteLine("MeasurementDevice '{Name}' updated {measurements.Count} points at time {t:F2}s");
     }
 }

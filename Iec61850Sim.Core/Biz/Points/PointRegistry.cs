@@ -25,7 +25,7 @@ public class PointRegistry
 
     }
     
-    public IEnumerable<DevicePoint> ByFc(FunctionalConstraint fc)
+    public IEnumerable<DevicePoint> GetByFc(FunctionalConstraint fc)
     {
         return points.Values.Where(p => p.Fc == fc);
     }

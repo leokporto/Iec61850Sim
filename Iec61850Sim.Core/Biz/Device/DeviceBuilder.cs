@@ -17,22 +17,26 @@ public class DeviceBuilder
     private void BuildBreakers(PointRegistry registry, DeviceManager manager)
     {
         var groups = registry.All
-            .Where(p => p.LnType == eLnType.XCBR && p.DataObject == "Pos")
+            .Where(p => p.LnType == eLnType.XCBR && p.DataObject == "Pos"
+            && p.Fc == FunctionalConstraint.ST && p.ValueAttribute != null)
             .GroupBy(p => p.LogicalNode);
-
+        
         foreach (var g in groups)
         {
-            var point = g.First(x => x.Reference.Contains("stVal"));
+            //var point = g.First(x => x.Fc == FunctionalConstraint.ST);
+            var point = g.Single();
             var breaker = new Breaker(g.Key, point);
 
             manager.Register(breaker);
-        }
+        }       
     }
 
     private void BuildMeasurements(PointRegistry registry, DeviceManager manager)
     {
         var groups = registry.All
-            .Where(p => p.LnType == eLnType.MMXU)
+            .Where(p => p.LnType == eLnType.MMXU
+                    && p.Fc == FunctionalConstraint.MX 
+                    && p.ValueAttribute != null)
             .GroupBy(p => p.LogicalNode);
 
         foreach (var group in groups)
@@ -41,6 +45,7 @@ public class DeviceBuilder
 
             manager.Register(device);
         }
+        
     }
 
     private void BuildControllers(PointRegistry registry, DeviceManager manager)
@@ -51,11 +56,11 @@ public class DeviceBuilder
 
         foreach (var g in groups)
         {
-            var point = g.First(x => x.Reference.Contains("ctlVal"));
-            
+            var point = g.First();
+
             var breaker = manager.Breakers.FirstOrDefault(x => x.Position.EquipmentName.Equals(point.EquipmentName));
-            if(breaker == null)
-            {
+            if (breaker == null || string.IsNullOrWhiteSpace(breaker.Name))
+            {                    
                 continue;
             }
 

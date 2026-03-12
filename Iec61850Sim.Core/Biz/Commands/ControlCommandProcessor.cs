@@ -1,5 +1,7 @@
 ﻿using IEC61850.Common;
 using IEC61850.Server;
+using Iec61850Sim.Core.Iec61850;
+using Iec61850Sim.Core.Model.Devices;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,28 +17,34 @@ public class ControlCommandProcessor
         this.binder = binder;
     }
 
-    public ControlHandlerResult Operate(DataObject obj, MmsValue ctlVal, bool test)
+    public ControlHandlerResult Operate(Cswi controller, MmsValue ctlVal, bool test)
     {
-        //int pos = ctlVal.GetInt32();
+        eDblPos pos;
 
-        //var breaker = ResolveBreaker(obj);
+        if (ctlVal.GetType() == MmsType.MMS_BOOLEAN)
+        {
+            pos = ctlVal.GetBoolean() ? eDblPos.On : eDblPos.Off;
+        }
+        else
+        {
+            pos = (eDblPos)ctlVal.ToInt32();
+        }
 
-        //if (breaker == null)
-        //    return ControlHandlerResult.FAILED;
+        var breaker = controller.Breaker;
 
-        //switch (pos)
-        //{
-        //    case 1:
-        //        breaker.Open();
-        //        break;
+        switch (pos)
+        {
+            case eDblPos.Off:
+                breaker.Open();
+                break;
 
-        //    case 2:
-        //        breaker.Close();
-        //        break;
+            case eDblPos.On:
+                breaker.Close();
+                break;
 
-        //    default:
-        //        return ControlHandlerResult.FAILED;
-        //}
+            default:
+                return ControlHandlerResult.FAILED;
+        }
 
         return ControlHandlerResult.OK;
     }

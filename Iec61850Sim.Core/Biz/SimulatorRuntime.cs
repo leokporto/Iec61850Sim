@@ -34,10 +34,7 @@ public class RuntimeEngine
         if (ServerRunning)
             return;
 
-        iecHost.Start(102);
-
-        var binder = new PointBinder();
-        binder.Bind(model, devices, iecHost.Server);
+        iecHost.Start(102);        
 
         ServerRunning = true;
 

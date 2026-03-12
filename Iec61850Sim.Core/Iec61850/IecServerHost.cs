@@ -2,7 +2,10 @@ using IEC61850.Client;
 using IEC61850.Common;
 using IEC61850.Server;
 using Iec61850Sim.Core.Biz.Commands;
+using Iec61850Sim.Core.Biz.Device;
 using Iec61850Sim.Core.Biz.Points;
+using Iec61850Sim.Core.Model;
+using Iec61850Sim.Core.Model.Devices;
 using System.Diagnostics;
 
 
@@ -13,17 +16,18 @@ public class IecServerHost
     private readonly IedServer server;
     private readonly PointRegistry registry;
     private readonly ControlCommandProcessor commandProcessor;
+    private readonly DeviceManager deviceManager;
 
-    public IecServerHost(IedModel model, PointRegistry registry, ControlCommandProcessor commandProcessor)
+    public IecServerHost(IedModel model, PointRegistry registry, DeviceManager deviceManager, ControlCommandProcessor commandProcessor)
     {
         this.registry = registry;
+        this.deviceManager = deviceManager;
+        this.commandProcessor = commandProcessor;
 
         var config = new IedServerConfig();
         config.ReportBufferSize = 100000;
 
         server = new IedServer(model, config);
-
-        this.commandProcessor = commandProcessor;
 
         RegisterControlHandlers();
     }
@@ -72,7 +76,7 @@ public class IecServerHost
                     break;
             }
             
-            if(point.Timestamp != null)
+            if(point.TimestampAttribute != null)
                 server.UpdateTimestampAttributeValue(point.TimestampAttribute, 
                     new Timestamp(point.Timestamp.DateTime));
             
@@ -81,33 +85,43 @@ public class IecServerHost
 
     private void RegisterControlHandlers()
     {
-        //var operPoints = registry.All
-        //    .Where(p => p.Fc == FunctionalConstraint.CO &&
-        //                p.DataObject == "Pos");
+        var groups = registry.GetByFc(FunctionalConstraint.CO)
+            .Where(p => p.DataObject == "Pos")
+            .GroupBy(p => p.LogicalNode);
 
-        //foreach (var p in operPoints)
-        //{
-        //    var dataObject = (DataObject)p.ValueAttribute.GetParent();
+        foreach (var g in groups)
+        {
+            var point = g.First();
 
-        //    //server.SetCheckHandler(dataObject, CheckHandler, dataObject);
-        //    //server.SetControlHandler(dataObject, ControlHandler, dataObject);
-        //    //server.SetSelectStateChangedHandler(dataObject, SelectStateChanged, dataObject);
-        //}
+            var pos = (DataObject)point.ValueAttribute
+                .GetParent()   // Oper
+                .GetParent();  // Pos
+
+            var controller = deviceManager.Controllers
+                .FirstOrDefault(c => c.Name == g.Key);
+
+            if (controller == null)
+                continue;
+
+            server.SetCheckHandler(pos, CheckHandler, controller);
+            server.SetControlHandler(pos, ControlHandler, controller);
+            server.SetSelectStateChangedHandler(pos, SelectStateChanged, controller);
+        }
     }
 
-    private ControlHandlerResult ControlHandler(object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
+    private ControlHandlerResult ControlHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test)
     {
-        var dataObject = (DataObject)parameter;
+        var controller = (Cswi)parameter;
 
-        return commandProcessor.Operate(dataObject, ctlVal, test);
+        return commandProcessor.Operate(controller, ctlVal, test);
     }
 
-    private CheckHandlerResult CheckHandler(object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
+    private CheckHandlerResult CheckHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
     {
         return CheckHandlerResult.ACCEPTED;
     }
 
-    private void SelectStateChanged(object parameter, bool selected, ClientConnection connection)
+    private void SelectStateChanged(ControlAction action, object parameter, bool isSelected, SelectStateChangedReason reason)
     {
     }
 
