@@ -84,7 +84,10 @@ public class DeviceBuilder
                                                  p.ValueAttribute != null);
 
             if (cmdPoint == null || posPoint == null)
+            {
+                Console.WriteLine($"[DeviceBuilder] CSWI '{g.Key}' ignorado: cmdPoint={cmdPoint?.Reference ?? "null"}, posPoint={posPoint?.Reference ?? "null"}");
                 continue;
+            }            
 
             var breaker = manager.Breakers
                 .FirstOrDefault(x => x.Position.EquipmentName.Equals(cmdPoint.EquipmentName));

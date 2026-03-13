@@ -6,8 +6,7 @@ namespace Iec61850Sim.Core.Model;
 
 public class DevicePoint
 {
-    public string BaseReference { get; set; } = "";
-
+    
     public string Reference { get; init; }
     public string EquipmentName { get; init; }
 
