@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 
 @using Iec61850Sim.Web.Components.Controls
 @inject Iec61850Sim.Core.Biz.RuntimeEngine RunEngine
@@ -102,6 +102,15 @@
 
             <MeasuresGrid LogicalDevice="@LogicalDevice"
                           LogicalNode="@LogicalNode" />
+
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+
+            <XcbrCswiStatesGrid LogicalDevice="@LogicalDevice"
+                                LogicalNode="@LogicalNode" />
 
         </div>
     </div>

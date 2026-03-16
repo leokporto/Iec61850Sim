@@ -1,0 +1,25 @@
+@using Iec61850Sim.Core.Model.Devices
+@inject Iec61850Sim.Core.Biz.Device.DeviceManager deviceManager
+
+<h3>XCBR / CSWI</h3>
+
+<table class="table table-sm table-striped table-borderless">
+    <thead>
+    <tr>
+        <th>Type</th>
+        <th>Reference</th>
+        <th>State</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    @foreach (PointStateRow row in Rows)
+    {
+        <tr @key="row.RowKey">
+            <td>@row.PointType</td>
+            <td>@row.Reference</td>
+            <td class="@row.StateCssClass">@row.StateText</td>
+        </tr>
+    }
+    </tbody>
+</table>
