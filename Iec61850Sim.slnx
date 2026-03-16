@@ -1,5 +1,10 @@
 <Solution>
-  <Project Path="Iec61850Sim.Core/Iec61850Sim.Core.csproj" Id="3520f809-9af5-4d56-a22d-0aac321e7ebd" />
-  <Project Path="Iec61850Sim.Desktop/Iec61850Sim.Desktop.csproj" Id="9dc28a9e-a99c-4dda-b753-b1d469d123ed" />
-  <Project Path="Iec61850Sim.Web/Iec61850Sim.Web.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/Iec61850Sim.Core/Iec61850Sim.Core.csproj" Id="3520f809-9af5-4d56-a22d-0aac321e7ebd" />
+    <Project Path="src/Iec61850Sim.Desktop/Iec61850Sim.Desktop.csproj" Id="9dc28a9e-a99c-4dda-b753-b1d469d123ed" />
+    <Project Path="src/Iec61850Sim.Web/Iec61850Sim.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj" Id="efd105af-16d0-4c92-a31d-cf3eb9c18e4d" />
+  </Folder>
 </Solution>

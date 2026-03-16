@@ -13,7 +13,7 @@
 
     <ItemGroup>
         <Reference Include="iec61850dotnet">
-            <HintPath>..\ThirdPartyRefs\iec61850dotnet.dll</HintPath>
+            <HintPath>..\..\ThirdPartyRefs\iec61850dotnet.dll</HintPath>
         </Reference>
     </ItemGroup>
 

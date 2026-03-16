@@ -2,13 +2,13 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
 
-COPY Iec61850Sim.Core/Iec61850Sim.Core.csproj Iec61850Sim.Core/
-COPY Iec61850Sim.Web/Iec61850Sim.Web.csproj Iec61850Sim.Web/
+COPY src/Iec61850Sim.Core/Iec61850Sim.Core.csproj Iec61850Sim.Core/
+COPY src/Iec61850Sim.Web/Iec61850Sim.Web.csproj Iec61850Sim.Web/
 
 RUN dotnet restore Iec61850Sim.Web/Iec61850Sim.Web.csproj
 
-COPY Iec61850Sim.Core/ Iec61850Sim.Core/
-COPY Iec61850Sim.Web/ Iec61850Sim.Web/
+COPY src/Iec61850Sim.Core/ Iec61850Sim.Core/
+COPY src/Iec61850Sim.Web/ Iec61850Sim.Web/
 COPY ThirdPartyRefs/ ThirdPartyRefs/
 
 WORKDIR /src/Iec61850Sim.Web

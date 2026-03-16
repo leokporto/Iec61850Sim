@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="iec61850dotnet">
-      <HintPath>..\ThirdPartyRefs\iec61850dotnet.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Bogus" Version="35.6.5" />
+    <PackageReference Include="NSubstitute" Version="6.0.0-rc.1" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
 
 </Project>

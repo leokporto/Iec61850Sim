@@ -27,7 +27,7 @@ This project is useful for:
 From the repository root:
 
 ```bash
-dotnet build Iec61850Sim.Api/Iec61850Sim.Api.csproj
+dotnet build Iec61850Sim.Web/Iec61850Sim.Web.csproj
 ``` 
 
 ### 3) Run
@@ -35,7 +35,7 @@ dotnet build Iec61850Sim.Api/Iec61850Sim.Api.csproj
 **Dev Environment:**
 
 ```bash
-dotnet run --project Iec61850Sim.Api/Iec61850Sim.Api.csproj
+dotnet run --project Iec61850Sim.Web/Iec61850Sim.Web.csproj
 ```
 
 
@@ -152,9 +152,10 @@ Altough currently Ied Name is hard coded, there is already an item on backlog to
   README.md                 
   ConfigFiles/              # Config files folder (.cfg and SCL files)
   Docker/                   # Docker files
-  Iec61850Sim.Core/         # Core functionalities, use cases
-  Iec61850Sim.Desktop/      # Wpf Webview2 project
-  Iec61850Sim.Web/          # Blazor Server App
+  src
+    Iec61850Sim.Core/         # Core functionalities, use cases
+    Iec61850Sim.Desktop/      # Wpf Webview2 project
+    Iec61850Sim.Web/          # Blazor Server App
   ThirdPartyRefs/           # Mz-Automation libraries (iec61850dotnet.dll and iec61850.dll). *This folder was added to .gitignore file (licensing).*
     linux/                  # Mz-Automation libraries (libiec61850.so and libiec61850.so.1.6.1)
 ```
