@@ -1,0 +1,137 @@
+root = true
+
+########################################
+# GLOBAL
+########################################
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+########################################
+# C# FILES
+########################################
+
+[*.cs]
+
+########################################
+# INDENTATION
+########################################
+
+indent_style = space
+indent_size = 4
+tab_width = 4
+
+########################################
+# USING DIRECTIVES
+########################################
+
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = true
+
+########################################
+# BRACES & NEWLINES
+########################################
+
+csharp_new_line_before_open_brace = all
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+
+########################################
+# VAR USAGE
+########################################
+
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+########################################
+# EXPRESSION STYLE
+########################################
+
+csharp_style_expression_bodied_methods = false:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+
+########################################
+# NULL CHECKING
+########################################
+
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+
+########################################
+# NAMING RULES
+########################################
+
+########## PRIVATE FIELDS → _camelCase ##########
+
+dotnet_naming_rule.private_fields_rule.symbols = private_fields
+dotnet_naming_rule.private_fields_rule.style = private_field_style
+dotnet_naming_rule.private_fields_rule.severity = suggestion
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.private_field_style.required_prefix = _
+dotnet_naming_style.private_field_style.capitalization = camel_case
+
+########## CONSTANTS → UPPER_CASE ##########
+
+dotnet_naming_rule.constants_rule.symbols = constants
+dotnet_naming_rule.constants_rule.style = constant_style
+dotnet_naming_rule.constants_rule.severity = suggestion
+
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_style.constant_style.capitalization = all_upper
+
+########## ENUMS → ePascalCase ##########
+
+dotnet_naming_rule.enums_rule.symbols = enums
+dotnet_naming_rule.enums_rule.style = enum_style
+dotnet_naming_rule.enums_rule.severity = suggestion
+
+dotnet_naming_symbols.enums.applicable_kinds = enum
+
+dotnet_naming_style.enum_style.required_prefix = e
+dotnet_naming_style.enum_style.capitalization = pascal_case
+
+########## INTERFACES → I + PascalCase ##########
+
+dotnet_naming_rule.interfaces_rule.symbols = interfaces
+dotnet_naming_rule.interfaces_rule.style = interface_style
+dotnet_naming_rule.interfaces_rule.severity = suggestion
+
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+
+dotnet_naming_style.interface_style.required_prefix = I
+dotnet_naming_style.interface_style.capitalization = pascal_case
+
+########################################
+# ANALYZERS (IMPORTANT BUT NOT NOISY)
+########################################
+
+# Remove unused usings
+dotnet_diagnostic.IDE0005.severity = warning
+
+# Naming violations
+dotnet_diagnostic.IDE1006.severity = suggestion
+
+# Use explicit types vs var (balanced)
+dotnet_diagnostic.IDE0007.severity = suggestion
+dotnet_diagnostic.IDE0008.severity = suggestion
+
+# Simplify expressions
+dotnet_diagnostic.IDE0041.severity = suggestion
+
+# Null propagation
+dotnet_diagnostic.IDE0031.severity = suggestion
+
+########################################
+# FORMATTING
+########################################
+
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = false

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(**/*.pfx)",
+      "Read(**/*.crt)",
+      "Read(**/secrets.json)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/*.key)",
+      "Edit(**/*.pem)",
+      "Edit(**/*.pfx)",
+      "Edit(**/*.crt)",
+      "Edit(**/secrets.json)"
+    ],
+    "allow": [
+      "Read(ConfigFiles/*.cfg)",
+      "Read(ConfigFiles/*.icd)",
+      "Read(ConfigFiles/*.scl)",
+      "Read(src/Iec61850Sim.Web/Config/*.cfg)",
+      "Read(src/Iec61850Sim.Web/Config/*.icd)"
+    ]
+  }
+}

@@ -1,4 +1,4 @@
-# Agent Context — Iec61850Sim
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -99,3 +99,11 @@ Always reference official documentation:
 - Naming: class `<ClassName>Tests`, method `<Method>_<Condition>_<ExpectedResult>`
 - Mock only external dependencies; never mock domain logic
 - Reproduce bugs with a failing test first, then fix
+
+## Workflows
+
+@.claude/rules/WORKFLOWS.md
+
+## Security
+
+@.claude/rules/SECURITY_RULES.md
