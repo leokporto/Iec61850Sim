@@ -48,28 +48,6 @@ public class DeviceBuilder
         
     }
 
-    //private void BuildControllers(PointRegistry registry, DeviceManager manager)
-    //{
-    //    var groups = registry.All
-    //        .Where(p => p.LnType == eLnType.CSWI && p.Fc == FunctionalConstraint.CO )
-    //        .GroupBy(p => p.LogicalNode);
-
-    //    foreach (var g in groups)
-    //    {
-    //        var bindPoint = g.First(); //XCBR STVAL
-
-    //        var breaker = manager.Breakers.FirstOrDefault(x => x.Position.EquipmentName.Equals(bindPoint.EquipmentName));
-    //        if (breaker == null || string.IsNullOrWhiteSpace(breaker.Name))
-    //        {                    
-    //            continue;
-    //        }
-
-    //        var cswi = new Cswi(g.Key, bindPoint, breaker);
-
-    //        manager.RegisterController(cswi);
-    //    }
-    //}
-
     private void BuildControllers(PointRegistry registry, DeviceManager manager)
     {
         var groups = registry.All

@@ -194,9 +194,9 @@ public class IecServerHostTests
     }
 
     [Fact]
-    public void SelectStateChanged_WhenInvoked_ShouldNotThrow()
+    public void SelectStateChanged_WithoutPendingCtlVal_ShouldNotThrow()
     {
-        // Arrange
+        // Arrange — sem ctlVal pendente no dicionário: TryGetValue retorna false → retorno antecipado
         var context = CreateContext();
         var host = context.Host;
         try
@@ -216,6 +216,52 @@ public class IecServerHostTests
 
             // Assert
             Assert.Null(exception);
+        }
+        finally
+        {
+            host.Stop();
+        }
+    }
+
+    [Fact]
+    public void SelectStateChanged_AfterCheckHandlerStoresCtlVal_ShouldOperateAndPublish()
+    {
+        // Arrange — simula o fluxo SBO: CheckHandler (SELECT) → SelectStateChanged
+        var context = CreateContext();
+        var host = context.Host;
+        try
+        {
+            var breakerPos = CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", eLnType.XCBR, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
+            breakerPos.Value = (int)eDblPos.Off;
+
+            var controllerPos = CreatePoint("LD0/CSWI1.Pos.stVal", "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
+            var cmdPoint = CreatePoint("LD0/CSWI1.Pos.SBOw.ctlVal", "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.CO, context.BoolValueAttribute, equipmentName: "Q01");
+
+            var breaker = new Breaker("XCBR1", breakerPos);
+            var controller = new Cswi("CSWI1", cmdPoint, controllerPos, breaker);
+
+            var checkMethod = typeof(IecServerHost).GetMethod("CheckHandler", BindingFlags.Instance | BindingFlags.NonPublic);
+            var selectMethod = typeof(IecServerHost).GetMethod("SelectStateChanged", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(checkMethod);
+            Assert.NotNull(selectMethod);
+
+            // CheckHandler é chamado na fase SELECT com action.IsSelect()=true
+            // Como ControlAction é uma classe nativa sem construtor público,
+            // usamos o dicionário diretamente via reflection para simular o armazenamento do ctlVal
+            var pendingField = typeof(IecServerHost).GetField("_pendingSelectCtlVals", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(pendingField);
+            var pending = (Dictionary<string, MmsValue>)pendingField!.GetValue(host)!;
+            pending[controller.Name] = new MmsValue(true); // ctlVal = true → Close
+
+            var action = (ControlAction)RuntimeHelpers.GetUninitializedObject(typeof(ControlAction));
+
+            // Act
+            selectMethod!.Invoke(host, [action, controller, true, SelectStateChangedReason.SELECT_STATE_REASON_SELECTED]);
+
+            // Assert — breaker deve ter fechado (On = 2)
+            Assert.Equal((int)eDblPos.On, breaker.Position.Value);
+            Assert.Equal((int)eDblPos.On, controller.Position.Value);
+            Assert.Equal(2u, host.Server.GetAttributeValue(context.CodedEnumAttribute).BitStringToUInt32BigEndian());
         }
         finally
         {
