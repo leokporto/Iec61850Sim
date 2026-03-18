@@ -73,23 +73,12 @@ Prefer vertical slices for organization.
 
 ## Key Rules
 
-**libiec61850 .NET binding:**
-- The .NET API differs from the C API — never assume parity
-- Object references use dot notation: `DemoMeasurement/U3pMMXU2.PhV.phsA.cVal.mag`
-- `IedModel` is NOT a `ModelNode`
-- Control handlers registered via `GetModelNodeByShortObjectReference()`
-- Never use MMS-style `$MX$` / `$ST$` references
-
-Always reference official documentation:
-- https://github.com/mz-automation/libiec61850/tree/v1.6/dotnet
-- https://github.com/mz-automation/libiec61850/tree/v1.6/tools/model_generator_dotnet
-- https://libiec61850.com/documentation/
-- https://libiec61850.com/documentation/using-the-c-api/
-- https://support.mz-automation.de/doc/libiec61850/net/latest/
-
 **Device creation:** Always go through `DeviceBuilder` → `DeviceManager`. Direct instantiation is not allowed.
 
 **libiec61850 access:** Only through proper abstractions (`IecServerHost`). Do not call libiec61850 directly from Web or Desktop layers.
+
+## Skills disponíveis
+- `libiec61850` — consultar SEMPRE antes de usar qualquer classe ou método da biblioteca
 
 ## Testing
 

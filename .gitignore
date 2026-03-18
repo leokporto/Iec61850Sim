@@ -6,6 +6,9 @@
 # Third party references
 ThirdPartyRefs/
 
+# Claude Code - user-specific local settings (project settings.json is tracked)
+.claude/settings.local.json
+
 # User-specific files
 *.rsuser
 *.suo
