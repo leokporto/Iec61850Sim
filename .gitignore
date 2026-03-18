@@ -15,7 +15,14 @@ ThirdPartyRefs/
 *.user
 *.userosscache
 *.sln.docstates
+
+# Environment and secrets
 *.env
+.env.*
+secrets.json
+*.key
+*.pem
+*.crt
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
