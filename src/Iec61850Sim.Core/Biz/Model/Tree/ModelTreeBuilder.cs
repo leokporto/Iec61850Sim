@@ -61,19 +61,36 @@ public class ModelTreeBuilder : IModelTreeBuilder
 
     private static void AttachLeafPoints(DataObject doObj, DataObjectNode doNode, IPointRegistry registry)
     {
-        var children = doObj.GetChildren();
-        if (children == null) return;
-
         var seen = new HashSet<DevicePoint>(ReferenceEqualityComparer.Instance);
+        CollectLeafPoints(doObj, doNode, registry, seen);
+    }
+
+    /// <summary>
+    /// Recursively walks DataAttribute children (not DataObjects, which are handled by BuildDataObjects)
+    /// to find leaf DAs whose full object reference matches a registry entry.
+    /// This is required because value attributes (e.g. "f") are often nested inside
+    /// structured DataAttributes (e.g. cVal → mag → f) rather than being direct children of the DO.
+    /// </summary>
+    private static void CollectLeafPoints(ModelNode node, DataObjectNode doNode, IPointRegistry registry, HashSet<DevicePoint> seen)
+    {
+        var children = node.GetChildren();
+        if (children == null) return;
 
         foreach (ModelNode child in children)
         {
+            if (child is DataObject) continue; // SDOs handled by BuildDataObjects
             if (child is not DataAttribute da) continue;
-            if (da.GetChildren()?.Any() == true) continue;
 
-            var point = registry.Get(da.GetObjectReference());
-            if (point != null && seen.Add(point))
-                doNode.AddChild(new DataAttributeNode(point));
+            if (da.GetChildren()?.Any() == true)
+            {
+                CollectLeafPoints(da, doNode, registry, seen);
+            }
+            else
+            {
+                var point = registry.GetPoint(da.GetObjectReference());
+                if (point != null && seen.Add(point))
+                    doNode.AddChild(new DataAttributeNode(point));
+            }
         }
     }
 }
