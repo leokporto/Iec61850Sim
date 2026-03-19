@@ -66,6 +66,8 @@ Model traversal: `IedModel → LogicalDevice → LogicalNode → DataObject → 
 
 **Simulation loop** (in `SimulationService`): calls `simulation.Step()` then `iecServerHost.Publish()` every 1000–2000 ms. Must not block the ASP.NET pipeline.
 
+**PointRegistry** is the single source of truth for all device points. `DeviceBuilder` creates device abstractions based on the registry, which are then used by the simulation engine and IEC server.
+
 ### Architecture Principles
 
 Use best practices sucha as SOLID, Separation of Concerns, dependency Injection, Low coupling, DRY. 

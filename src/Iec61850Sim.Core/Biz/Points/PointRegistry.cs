@@ -6,7 +6,7 @@ namespace Iec61850Sim.Core.Biz.Points;
 /// <summary>
 /// Registers and maintains device Points
 /// </summary>
-public class PointRegistry
+public class PointRegistry : IPointRegistry
 {
     private readonly Dictionary<string, DevicePoint> points = new();
 
