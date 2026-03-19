@@ -30,6 +30,8 @@ public class IecServerHost
 
         _server = new IedServer(model, config);
 
+        _server.SetServerIdentity("IEC61850-Sim", "Demo", "1.0.0");
+
         RegisterControlHandlers();
     }
 
