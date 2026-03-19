@@ -6,5 +6,5 @@ public sealed class LogicalDeviceNode : ModelNodeBase
 {
     public LogicalDeviceNode(string name) : base(name) { }
 
-    public override IEnumerable<DevicePoint> GetPoints() => [];
+    public override IEnumerable<PointValue<object>> GetPoints() => [];
 }

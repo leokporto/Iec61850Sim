@@ -1,5 +1,8 @@
+using IEC61850.Common;
 using Iec61850Sim.Core.Biz.Device;
+using Iec61850Sim.Core.Biz.Points;
 using Iec61850Sim.Core.Iec61850;
+using Iec61850Sim.Core.Model;
 using Iec61850Sim.Core.Model.Devices;
 using Iec61850Sim.UnitTests.TestHelpers;
 using Xunit;
@@ -11,16 +14,14 @@ public class DeviceManagerTests
     [Fact]
     public void Register_WithBreaker_ShouldAddToDevicesAndBreakers()
     {
-        // Arrange
-        var manager = new DeviceManager();
-        var breaker = new Breaker(
-            name: "XCBR1",
-            pos: DevicePointFactory.CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", "Pos", eLnType.XCBR, IEC61850.Common.FunctionalConstraint.ST));
+        var registry = new PointRegistry();
+        registry.Register(DevicePointFactory.CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", "Pos", eLnType.XCBR, FunctionalConstraint.ST));
 
-        // Act
+        var manager = new DeviceManager();
+        var breaker = new Breaker("XCBR1", "LD0/XCBR1.Pos.stVal", "Q01", registry);
+
         manager.Register(breaker);
 
-        // Assert
         Assert.Single(manager.Devices);
         Assert.Single(manager.Breakers);
         Assert.Same(breaker, manager.Breakers[0]);
@@ -29,20 +30,14 @@ public class DeviceManagerTests
     [Fact]
     public void Register_WithMeasurementDevice_ShouldAddToDevicesAndMeasurements()
     {
-        // Arrange
-        var manager = new DeviceManager();
-        var point = DevicePointFactory.CreatePoint(
-            "LD0/MMXU1.PhV.phsA.cVal.mag.f",
-            "MMXU1",
-            "PhV",
-            eLnType.MMXU,
-            IEC61850.Common.FunctionalConstraint.MX);
-        var measurement = new MeasurementDevice("MMXU1", [point]);
+        var registry = new PointRegistry();
+        registry.Register(DevicePointFactory.CreatePoint("LD0/MMXU1.PhV.phsA.cVal.mag.f", "MMXU1", "PhV", eLnType.MMXU, FunctionalConstraint.MX));
 
-        // Act
+        var manager = new DeviceManager();
+        var measurement = new MeasurementDevice("MMXU1", ["LD0/MMXU1.PhV.phsA.cVal.mag.f"], registry);
+
         manager.Register(measurement);
 
-        // Assert
         Assert.Single(manager.Devices);
         Assert.Single(manager.Measurements);
         Assert.Same(measurement, manager.Measurements[0]);
@@ -51,19 +46,17 @@ public class DeviceManagerTests
     [Fact]
     public void RegisterController_WithCswi_ShouldAddToControllersOnly()
     {
-        // Arrange
-        var manager = new DeviceManager();
-        var breaker = new Breaker(
-            "XCBR1",
-            DevicePointFactory.CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", "Pos", eLnType.XCBR, IEC61850.Common.FunctionalConstraint.ST));
-        var cmd = DevicePointFactory.CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "CSWI1", "Pos", eLnType.CSWI, IEC61850.Common.FunctionalConstraint.CO, withValueAttribute: false);
-        var pos = DevicePointFactory.CreatePoint("LD0/CSWI1.Pos.stVal", "CSWI1", "Pos", eLnType.CSWI, IEC61850.Common.FunctionalConstraint.ST);
-        var cswi = new Cswi("CSWI1", cmd, pos, breaker);
+        var registry = new PointRegistry();
+        registry.Register(DevicePointFactory.CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", "Pos", eLnType.XCBR, FunctionalConstraint.ST));
+        registry.Register(DevicePointFactory.CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.CO, withValueAttribute: false));
+        registry.Register(DevicePointFactory.CreatePoint("LD0/CSWI1.Pos.stVal", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.ST));
 
-        // Act
+        var manager = new DeviceManager();
+        var breaker = new Breaker("XCBR1", "LD0/XCBR1.Pos.stVal", "Q01", registry);
+        var cswi = new Cswi("CSWI1", "LD0/CSWI1.Pos.Oper.ctlVal", "LD0/CSWI1.Pos.stVal", breaker, registry);
+
         manager.RegisterController(cswi);
 
-        // Assert
         Assert.Single(manager.Controllers);
         Assert.Empty(manager.Devices);
     }
@@ -71,7 +64,6 @@ public class DeviceManagerTests
     [Fact]
     public void Step_WithRegisteredDevices_ShouldInvokeStepOnAllDevices()
     {
-        // Arrange
         var manager = new DeviceManager();
         var first = new TestDevice("A");
         var second = new TestDevice("B");
@@ -79,10 +71,8 @@ public class DeviceManagerTests
         manager.Register(first);
         manager.Register(second);
 
-        // Act
         manager.Step(0.25);
 
-        // Assert
         Assert.Equal(1, first.Calls);
         Assert.Equal(1, second.Calls);
         Assert.Equal(0.25, first.LastDt);

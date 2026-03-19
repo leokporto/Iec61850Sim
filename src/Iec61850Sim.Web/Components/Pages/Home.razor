@@ -1,144 +1,55 @@
 @page "/"
 
 @using Iec61850Sim.Web.Components.Controls
-@inject Iec61850Sim.Core.Biz.RuntimeEngine RunEngine
+@inject RuntimeEngine RunEngine
+@inject IModelNode ModelTree
 
-<PageTitle>Home</PageTitle>
+<PageTitle>IEC 61850 Simulator</PageTitle>
 
-<h3>Iec61850 tiny sim</h3>
+<MudGrid Spacing="3">
 
-<p>
-    Bem vindo ao pequeno simulador de IEC61850.
-</p>
+    <MudItem xs="12">
+        <MudPaper Elevation="1" Class="pa-3">
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.subtitle1"><b>Server</b></MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="StartServer">Start</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="StopServer">Stop</MudButton>
+                <MudDivider Vertical="true" FlexItem="true" Class="mx-2" />
+                <MudText Typo="Typo.subtitle1"><b>Simulation</b></MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartSimulation">Start</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="StopSimulation">Stop</MudButton>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
 
-<div class="container-fluid">
+    <MudItem xs="12" sm="3">
+        <MudPaper Elevation="1" Class="pa-2" Style="min-height: 400px;">
+            <MudText Typo="Typo.subtitle2" Class="mb-2 px-1">Model Tree</MudText>
+            <ModelTreeView RootNode="@ModelTree" OnNodeSelected="@OnNodeSelected" />
+        </MudPaper>
+    </MudItem>
 
-    <!-- Top controls -->
-    <div class="row g-3 mb-3">
+    <MudItem xs="12" sm="9">
+        <MudPaper Elevation="1" Class="pa-3" Style="min-height: 400px;">
+            <MudText Typo="Typo.subtitle2" Class="mb-3">
+                @(_selectedNode is not null ? _selectedNode.Name : "Device Points")
+            </MudText>
+            <DevicePointsPanel SelectedNode="@_selectedNode" />
+        </MudPaper>
+    </MudItem>
 
-        <!-- Server operations -->
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    Server
-                </div>
-                <div class="card-body d-grid gap-2">
+</MudGrid>
 
-                    <button class="btn btn-success btn-sm"
-                            @onclick="StartServer">
-                        Start
-                    </button>
+@code {
+    private IModelNode? _selectedNode;
 
-                    <button class="btn btn-danger btn-sm"
-                            @onclick="StopServer">
-                        Stop
-                    </button>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- Simulation operations -->
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    Simulation
-                </div>
-                <div class="card-body d-grid gap-2">
-
-                    <button class="btn btn-success btn-sm"
-                            @onclick="StartSimulation">
-                        Start
-                    </button>
-
-                    <button class="btn btn-danger btn-sm"
-                            @onclick="StopSimulation">
-                        Stop
-                    </button>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- Filter -->
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    Filter
-                </div>
-
-                <div class="card-body">
-
-                    <div class="row mb-2">
-                        <div class="col-4">
-                            Logical Device
-                        </div>
-                        <div class="col-8">
-                            <InputText class="form-control form-control-sm"
-                                       @bind-Value="LogicalDevice" />
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-4">
-                            Logical Node
-                        </div>
-                        <div class="col-8">
-                            <InputText class="form-control form-control-sm"
-                                       @bind-Value="LogicalNode" />
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Measures grid -->
-
-    <div class="row">
-        <div class="col-12">
-
-            <MeasuresGrid LogicalDevice="@LogicalDevice"
-                          LogicalNode="@LogicalNode" />
-
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-12">
-
-            <XcbrCswiStatesGrid LogicalDevice="@LogicalDevice"
-                                LogicalNode="@LogicalNode" />
-
-        </div>
-    </div>
-
-</div>
-
-@code
-{
-    private string LogicalDevice = "";
-    private string LogicalNode = "";
-
-    void StartServer()
+    private void OnNodeSelected(IModelNode node)
     {
-        RunEngine.StartServer();
+        _selectedNode = node;
     }
 
-    void StartSimulation()
-    {
-        RunEngine.StartSimulation();
-    }
-
-    void StopSimulation()
-    {
-        RunEngine.StopSimulation();
-    }
-
-    void StopServer()
-    {
-        RunEngine.StopServer();
-    }
+    void StartServer() => RunEngine.StartServer();
+    void StopServer() => RunEngine.StopServer();
+    void StartSimulation() => RunEngine.StartSimulation();
+    void StopSimulation() => RunEngine.StopSimulation();
 }

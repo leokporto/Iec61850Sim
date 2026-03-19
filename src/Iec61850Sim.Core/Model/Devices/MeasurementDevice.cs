@@ -1,31 +1,42 @@
+using Iec61850Sim.Core.Biz.Points;
+using Iec61850Sim.Core.Model;
+
 namespace Iec61850Sim.Core.Model.Devices;
 
 public class MeasurementDevice : DeviceBase
 {
-    private readonly List<DevicePoint> measurements;
+    private readonly List<string> _references;
+    private readonly IPointRegistry _registry;
 
-    public MeasurementDevice(string name, IEnumerable<DevicePoint> points)
+    public MeasurementDevice(string name, IEnumerable<string> references, IPointRegistry registry)
         : base(name)
     {
-        measurements = points.ToList();
+        _references = references.ToList();
+        _registry = registry;
     }
-
-
 
     public override void Step(double dt)
     {
         var t = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+        var now = DateTimeOffset.UtcNow;
 
-        foreach (var p in measurements)
+        var updates = _references.Select(r =>
         {
             double baseValue = 100;
             double oscillation = Math.Sin(t / 10) * 5;
             double noise = (Random.Shared.NextDouble() - 0.5) * 0.5;
 
-            p.Value = baseValue + oscillation + noise;
-            p.Timestamp = DateTimeOffset.UtcNow;
-        }
+            return new PointValue<object>
+            {
+                Reference = r,
+                Value = baseValue + oscillation + noise,
+                Timestamp = now,
+                Quality = 192
+            };
+        });
 
-        //Console.WriteLine("MeasurementDevice '{Name}' updated {measurements.Count} points at time {t:F2}s");
+        _registry.SetValues(updates);
+
+        Console.WriteLine($"MeasurementDevice '{Name}' updated {_references.Count} points at time {t:F2}s");
     }
 }

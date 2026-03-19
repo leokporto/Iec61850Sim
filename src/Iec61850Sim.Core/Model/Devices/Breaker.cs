@@ -1,17 +1,38 @@
+using Iec61850Sim.Core.Biz.Points;
+using Iec61850Sim.Core.Model;
+
 namespace Iec61850Sim.Core.Model.Devices;
 
 public class Breaker : DeviceBase
 {
-    public DevicePoint Position { get; }
+    private readonly IPointRegistry _registry;
 
-    public Breaker(string name, DevicePoint pos) : base(name)
+    public string PositionReference { get; }
+    public string EquipmentName { get; }
+
+    public Breaker(string name, string positionReference, string equipmentName, IPointRegistry registry)
+        : base(name)
     {
-        Position = pos;
+        PositionReference = positionReference;
+        EquipmentName = equipmentName;
+        _registry = registry;
     }
 
-    public void Open() => Position.Value = 1;
+    public void Open() => _registry.SetValue(new PointValue<object>
+    {
+        Reference = PositionReference,
+        Value = 1,
+        Timestamp = DateTimeOffset.UtcNow,
+        Quality = 192
+    });
 
-    public void Close() => Position.Value = 2;
+    public void Close() => _registry.SetValue(new PointValue<object>
+    {
+        Reference = PositionReference,
+        Value = 2,
+        Timestamp = DateTimeOffset.UtcNow,
+        Quality = 192
+    });
 
-    public override void Step(double dt) {}
+    public override void Step(double dt) { }
 }

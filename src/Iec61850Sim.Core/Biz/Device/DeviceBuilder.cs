@@ -20,32 +20,29 @@ public class DeviceBuilder
             .Where(p => p.LnType == eLnType.XCBR && p.DataObject == "Pos"
             && p.Fc == FunctionalConstraint.ST && p.ValueAttribute != null)
             .GroupBy(p => p.LogicalNode);
-        
+
         foreach (var g in groups)
         {
-            //var point = g.First(x => x.Fc == FunctionalConstraint.ST);
             var point = g.Single();
-            var breaker = new Breaker(g.Key, point);
-
+            var breaker = new Breaker(g.Key, point.Reference, point.EquipmentName, registry);
             manager.Register(breaker);
-        }       
+        }
     }
 
     private void BuildMeasurements(PointRegistry registry, DeviceManager manager)
     {
         var groups = registry.All
             .Where(p => p.LnType == eLnType.MMXU
-                    && p.Fc == FunctionalConstraint.MX 
+                    && p.Fc == FunctionalConstraint.MX
                     && p.ValueAttribute != null)
             .GroupBy(p => p.LogicalNode);
 
         foreach (var group in groups)
         {
-            var device = new MeasurementDevice(group.Key, group);
-
+            var refs = group.Select(p => p.Reference);
+            var device = new MeasurementDevice(group.Key, refs, registry);
             manager.Register(device);
         }
-        
     }
 
     private void BuildControllers(PointRegistry registry, DeviceManager manager)
@@ -65,16 +62,15 @@ public class DeviceBuilder
             {
                 Console.WriteLine($"[DeviceBuilder] CSWI '{g.Key}' ignorado: cmdPoint={cmdPoint?.Reference ?? "null"}, posPoint={posPoint?.Reference ?? "null"}");
                 continue;
-            }            
+            }
 
             var breaker = manager.Breakers
-                .FirstOrDefault(x => x.Position.EquipmentName.Equals(cmdPoint.EquipmentName));
+                .FirstOrDefault(x => x.EquipmentName.Equals(cmdPoint.EquipmentName));
 
             if (breaker == null)
                 continue;
 
-            var cswi = new Cswi(g.Key, cmdPoint, posPoint, breaker);
-
+            var cswi = new Cswi(g.Key, cmdPoint.Reference, posPoint.Reference, breaker, registry);
             manager.RegisterController(cswi);
         }
     }

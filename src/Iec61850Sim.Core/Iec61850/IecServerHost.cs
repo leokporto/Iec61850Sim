@@ -31,7 +31,6 @@ public class IecServerHost
         _server = new IedServer(model, config);
 
         RegisterControlHandlers();
-
     }
 
     public IedServer Server => _server;
@@ -79,6 +78,17 @@ public class IecServerHost
             if (point.QualityAttribute != null)
                 _server.UpdateQuality(point.QualityAttribute, point.Quality);
         }
+    }
+
+    // Publica pontos por referência — usado nos handlers de comando
+    private void PublishByReferences(IEnumerable<string> references)
+    {
+        var points = references
+            .Select(r => _registry.GetPoint(r))
+            .Where(p => p != null)
+            .Cast<DevicePoint>();
+
+        Publish(points);
     }
 
     private void PublishValue(DevicePoint point)
@@ -145,7 +155,7 @@ public class IecServerHost
 
         // Publica imediatamente o stVal do CSWI e do XCBR para o SCADA
         // receber o feedback antes (ou junto) ao CommandTermination
-        Publish([controller.Position, controller.Breaker.Position]);
+        PublishByReferences([controller.PositionReference, controller.Breaker.PositionReference]);
 
         return ControlHandlerResult.OK;
     }
@@ -153,8 +163,7 @@ public class IecServerHost
     private CheckHandlerResult CheckHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
     {
         // Para SBO (ctlModel=4): o ctlVal não é acessível via ControlAction no SelectStateChanged,
-        // então é capturado aqui. Para SBO-enhanced o ctlVal do SELECT == ctlVal do OPERATE
-        // (a biblioteca valida essa igualdade), então guardar em qualquer fase é suficiente.
+        // então é capturado aqui.
         if (ctlVal != null && parameter is Cswi ctrl)
             _pendingSelectCtlVals[ctrl.Name] = ctlVal;
 
@@ -177,6 +186,6 @@ public class IecServerHost
 
         // SBO (ctlModel=4): aplica o comando com o ctlVal do SelectWithValue
         _commandProcessor.Operate(controller, ctlVal, test: false);
-        Publish([controller.Position, controller.Breaker.Position]);
+        PublishByReferences([controller.PositionReference, controller.Breaker.PositionReference]);
     }
 }

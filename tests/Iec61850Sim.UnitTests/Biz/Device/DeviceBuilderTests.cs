@@ -5,6 +5,7 @@ using Iec61850Sim.Core.Biz.Device;
 using Iec61850Sim.Core.Biz.Points;
 using Iec61850Sim.Core.Iec61850;
 using Iec61850Sim.Core.Model;
+using Iec61850Sim.Core.Model.Devices;
 using Xunit;
 
 namespace Iec61850Sim.UnitTests.Biz.Device;
@@ -35,7 +36,8 @@ public class DeviceBuilderTests
         // Assert
         Assert.Single(manager.Breakers);
         Assert.Equal("XCBR1", manager.Breakers[0].Name);
-        Assert.Same(xcbrPos, manager.Breakers[0].Position);
+        Assert.Equal("LD0/XCBR1.Pos.stVal", manager.Breakers[0].PositionReference);
+        Assert.Equal("Q01", manager.Breakers[0].EquipmentName);
     }
 
     [Fact]
@@ -90,36 +92,32 @@ public class DeviceBuilderTests
         var manager = new DeviceManager();
         var sut = new DeviceBuilder();
 
-        var breakerPos = CreatePoint(
+        registry.Register(CreatePoint(
             reference: "LD0/XCBR1.Pos.stVal",
             equipmentName: "Q01",
             logicalNode: "XCBR1",
             dataObject: "Pos",
             lnType: eLnType.XCBR,
             fc: FunctionalConstraint.ST,
-            hasValueAttribute: true);
+            hasValueAttribute: true));
 
-        var cmdPoint = CreatePoint(
+        registry.Register(CreatePoint(
             reference: "LD0/CSWI1.Pos.Oper.ctlVal",
             equipmentName: "Q01",
             logicalNode: "CSWI1",
             dataObject: "Pos",
             lnType: eLnType.CSWI,
             fc: FunctionalConstraint.CO,
-            hasValueAttribute: false);
+            hasValueAttribute: false));
 
-        var posPoint = CreatePoint(
+        registry.Register(CreatePoint(
             reference: "LD0/CSWI1.Pos.stVal",
             equipmentName: "Q01",
             logicalNode: "CSWI1",
             dataObject: "Pos",
             lnType: eLnType.CSWI,
             fc: FunctionalConstraint.ST,
-            hasValueAttribute: true);
-
-        registry.Register(breakerPos);
-        registry.Register(cmdPoint);
-        registry.Register(posPoint);
+            hasValueAttribute: true));
 
         // Act
         sut.Build(registry, manager);
@@ -128,8 +126,8 @@ public class DeviceBuilderTests
         Assert.Single(manager.Breakers);
         Assert.Single(manager.Controllers);
         Assert.Same(manager.Breakers[0], manager.Controllers[0].Breaker);
-        Assert.Same(cmdPoint, manager.Controllers[0].CommandController);
-        Assert.Same(posPoint, manager.Controllers[0].Position);
+        Assert.Equal("LD0/CSWI1.Pos.Oper.ctlVal", manager.Controllers[0].CommandReference);
+        Assert.Equal("LD0/CSWI1.Pos.stVal", manager.Controllers[0].PositionReference);
     }
 
     [Fact]

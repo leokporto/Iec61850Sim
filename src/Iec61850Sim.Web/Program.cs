@@ -1,8 +1,10 @@
 using IEC61850.Server;
 using Iec61850Sim.Core.Biz;
+using MudBlazor.Services;
 using Iec61850Sim.Core.Biz.Commands;
 using Iec61850Sim.Core.Biz.Device;
 using Iec61850Sim.Core.Biz.Model;
+using Iec61850Sim.Core.Biz.Model.Tree;
 using Iec61850Sim.Core.Biz.Points;
 using Iec61850Sim.Core.Biz.Simulation;
 using Iec61850Sim.Core.Iec61850;
@@ -43,6 +45,8 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
+        builder.Services.AddMudServices();
+
         builder.WebHost.UseStaticWebAssets();
 
         builder.WebHost.UseUrls("http://0.0.0.0:8080");
@@ -74,6 +78,13 @@ public class Program
         
 
         builder.Services.AddSingleton<RuntimeEngine>();
+
+        builder.Services.AddSingleton<IModelNode>(sp =>
+        {
+            var mdl = sp.GetRequiredService<IedModel>();
+            var reg = sp.GetRequiredService<PointRegistry>();
+            return new ModelTreeBuilder().Build("Demo", mdl, reg);
+        });
 
         //Add background services
         builder.Services.AddHostedService<SimulationService>();

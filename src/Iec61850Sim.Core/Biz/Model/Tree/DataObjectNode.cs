@@ -6,6 +6,6 @@ public sealed class DataObjectNode : ModelNodeBase
 {
     public DataObjectNode(string name) : base(name) { }
 
-    public override IEnumerable<DevicePoint> GetPoints() =>
+    public override IEnumerable<PointValue<object>> GetPoints() =>
         Children.SelectMany(c => c.GetPoints());
 }

@@ -54,7 +54,8 @@ public class ModelTreeBuilderTests
 
         var daNode = Assert.Single(doNode.Children);
         var typedDaNode = Assert.IsType<DataAttributeNode>(daNode);
-        Assert.Same(point, typedDaNode.Point);
+        Assert.Equal(point.Reference, typedDaNode.Point.Reference);
+        Assert.Equal(point.Fc, typedDaNode.Point.FC);
     }
 
     [Fact]
@@ -114,8 +115,8 @@ public class ModelTreeBuilderTests
 
         var doNode = tree.Children[0].Children[0].Children[0];
         Assert.Equal(2, doNode.Children.Count);
-        Assert.Contains(doNode.Children, n => Assert.IsType<DataAttributeNode>(n).Point == coPoint);
-        Assert.Contains(doNode.Children, n => Assert.IsType<DataAttributeNode>(n).Point == stPoint);
+        Assert.Contains(doNode.Children, n => Assert.IsType<DataAttributeNode>(n).Point.Reference == coPoint.Reference);
+        Assert.Contains(doNode.Children, n => Assert.IsType<DataAttributeNode>(n).Point.Reference == stPoint.Reference);
     }
 
     [Fact]
@@ -137,7 +138,7 @@ public class ModelTreeBuilderTests
 
         var doNode = tree.Children[0].Children[0].Children[0];
         var daNode = Assert.Single(doNode.Children);
-        Assert.Same(point, Assert.IsType<DataAttributeNode>(daNode).Point);
+        Assert.Equal(point.Reference, Assert.IsType<DataAttributeNode>(daNode).Point.Reference);
     }
 
     [Fact]
@@ -197,8 +198,8 @@ public class ModelTreeBuilderTests
         var points = lnNode.GetPoints().ToList();
 
         Assert.Equal(2, points.Count);
-        Assert.Contains(stPoint, points);
-        Assert.Contains(coPoint, points);
+        Assert.Contains(points, pv => pv.Reference == stPoint.Reference);
+        Assert.Contains(points, pv => pv.Reference == coPoint.Reference);
     }
 
     [Fact]
@@ -220,11 +221,11 @@ public class ModelTreeBuilderTests
         var points = doNode.GetPoints().ToList();
 
         Assert.Single(points);
-        Assert.Same(point, points[0]);
+        Assert.Equal(point.Reference, points[0].Reference);
     }
 
     [Fact]
-    public void Build_DataAttributeNode_GetPoints_ShouldReturnOwnPoint()
+    public void Build_DataAttributeNode_GetPoints_ShouldReturnOwnPointValue()
     {
         var model = new IedModel("IED_TEST");
         var ld = new LogicalDevice("LD0", model);
@@ -240,15 +241,42 @@ public class ModelTreeBuilderTests
 
         var daNode = Assert.IsType<DataAttributeNode>(tree.Children[0].Children[0].Children[0].Children[0]);
 
-        Assert.Same(point, Assert.Single(daNode.GetPoints()));
-        Assert.Same(point, daNode.Point);
+        var pv = Assert.Single(daNode.GetPoints());
+        Assert.Equal(point.Reference, pv.Reference);
+        Assert.Equal(point.Fc, pv.FC);
+        Assert.Same(daNode.Point, pv);
+    }
+
+    [Fact]
+    public void Build_GetLivePoints_ShouldRefreshValueFromRegistry()
+    {
+        var model = new IedModel("IED_TEST");
+        var ld = new LogicalDevice("LD0", model);
+        var ln = new LogicalNode("MMXU1", ld);
+        var phv = new DataObject("PhV", ln);
+        var f = new DataAttribute("f", phv, DataAttributeType.FLOAT32, FunctionalConstraint.MX, TriggerOptions.NONE, 0);
+
+        var registry = new PointRegistry();
+        var point = CreatePoint(f.GetObjectReference(), FunctionalConstraint.MX);
+        registry.Register(point);
+
+        var tree = _sut.Build("IED_TEST", model, registry);
+
+        // Simulate a value update via registry
+        var now = DateTimeOffset.UtcNow;
+        registry.SetValue(new PointValue<object> { Reference = point.Reference, Value = 42.5, Timestamp = now, Quality = 192 });
+
+        var livePoints = tree.GetLivePoints(registry).ToList();
+
+        Assert.Single(livePoints);
+        Assert.Equal(42.5, livePoints[0].Value);
+        Assert.Equal(now, livePoints[0].Timestamp);
     }
 
     [Fact]
     public void Build_WithUnknownLogicalDevice_ShouldSkipLd()
     {
         var model = new IedModel("IED_TEST");
-        // LD "LD_OTHER" exists in registry but not in model
         var registry = new PointRegistry();
         registry.Register(CreatePoint("LD_OTHER/LN1.DO1.stVal", FunctionalConstraint.ST, "LD_OTHER"));
 

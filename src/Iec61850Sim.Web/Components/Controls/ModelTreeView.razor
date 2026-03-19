@@ -1,0 +1,25 @@
+<MudTreeView T="IModelNode" SelectedValueChanged="@OnSelectedValueChanged" Hover="true" Dense="true">
+    @if (RootNode is not null)
+    {
+        @RenderNode(RootNode)
+    }
+</MudTreeView>
+
+@code {
+    [Parameter] public IModelNode? RootNode { get; set; }
+    [Parameter] public EventCallback<IModelNode> OnNodeSelected { get; set; }
+
+    private async Task OnSelectedValueChanged(IModelNode? node)
+    {
+        if (node is not null)
+            await OnNodeSelected.InvokeAsync(node);
+    }
+
+    private RenderFragment RenderNode(IModelNode node) =>
+        @<MudTreeViewItem T="IModelNode" Value="@node" Text="@node.Name">
+            @foreach (var child in node.Children)
+            {
+                @RenderNode(child)
+            }
+        </MudTreeViewItem>;
+}

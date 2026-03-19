@@ -1,51 +1,41 @@
+using Iec61850Sim.Core.Biz.Points;
+using Iec61850Sim.Core.Model;
+
 namespace Iec61850Sim.Core.Model.Devices;
 
 /// <summary>
 /// Switch controller (CSWI on IEC61850).
-/// The logical controller that is responsible for the commands and associated to a Breaker Status (XCBR).
+/// Responsible for commands; delegates physical switching to the associated Breaker (XCBR).
 /// </summary>
 public class Cswi : DeviceBase
 {
-    public Cswi(string name, DevicePoint cmdController, DevicePoint position, Breaker breaker) : base(name)
+    private readonly IPointRegistry _registry;
+
+    public Cswi(string name, string commandReference, string positionReference, Breaker breaker, IPointRegistry registry)
+        : base(name)
     {
-        CommandController = cmdController;
-        Position = position;
+        CommandReference = commandReference;
+        PositionReference = positionReference;
         Breaker = breaker;
+        _registry = registry;
     }
 
-    /// <summary>
-    /// The breaker (XCBR) that is controlled by this CSWI
-    /// </summary>
+    /// <summary>The breaker (XCBR) controlled by this CSWI.</summary>
     public Breaker Breaker { get; private set; }
 
-    /// <summary>
-    /// The controller CO point (CSWI.Pos StVal) that is associated to the breaker position point (XCBR.Pos).
-    /// </summary>
-    public DevicePoint Position { get; }
+    /// <summary>Reference of the CO point used to receive commands (CSWI.Pos.Oper.ctlVal).</summary>
+    public string CommandReference { get; }
 
-    /// <summary>
-    /// The controller CO point (CSWI.Pos CtlVal) that is used to send commands to the breaker.
-    /// </summary>
-    public DevicePoint CommandController
-    {
-        get;
-    }
+    /// <summary>Reference of the ST point mirroring the breaker position (CSWI.Pos.stVal).</summary>
+    public string PositionReference { get; }
 
-    public void BindBreaker(Breaker breaker)
-    {
-        Breaker = breaker;
-    }
+    public void BindBreaker(Breaker breaker) => Breaker = breaker;
 
     public void Operate(bool close)
     {
-        if(close)
-            Breaker.Close();
-        else
-            Breaker.Open();
+        if (close) Breaker.Close();
+        else Breaker.Open();
     }
 
-    public override void Step(double dt)
-    {
-        
-    }
+    public override void Step(double dt) { }
 }

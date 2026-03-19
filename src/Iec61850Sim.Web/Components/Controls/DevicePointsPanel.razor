@@ -1,0 +1,154 @@
+
+@using IEC61850.Common
+@using Iec61850Sim.Core.Iec61850
+@using Iec61850Sim.Core.Model
+@implements IDisposable
+@inject RuntimeEngine RunEngine
+@inject PointRegistry Registry
+
+
+@if (SelectedNode is null)
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary">Select a node in the tree.</MudText>
+}
+else if (ShowPoints(SelectedNode))
+{
+    <MudTable T="PointValue<object>" Items="@_points" Dense="true" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Reference</MudTh>
+            <MudTh>FC</MudTh>
+            <MudTh>Value</MudTh>
+            <MudTh>Timestamp</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Reference">@context.Reference</MudTd>
+            <MudTd DataLabel="FC">@context.FC</MudTd>
+            <MudTd DataLabel="Value">@FormatValue(context)</MudTd>
+            <MudTd DataLabel="Timestamp">@context.Timestamp.ToLocalTime().ToString("HH:mm:ss")</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+else
+{
+    <MudGrid Spacing="2">
+        @foreach (var child in SelectedNode.Children)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@child.Name</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2">@child.Children.Count children</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public IModelNode? SelectedNode { get; set; }
+
+    private IReadOnlyList<PointValue<object>> _points = [];
+    private IModelNode? _lastNode;
+    private PeriodicTimer? _timer;
+    private readonly CancellationTokenSource _cts = new();
+
+    protected override void OnInitialized()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(2000));
+        _ = RefreshLoop(_cts.Token);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_lastNode != SelectedNode)
+        {
+            _lastNode = SelectedNode;
+            _points = GetLivePoints();
+        }
+    }
+
+    private async Task RefreshLoop(CancellationToken token)
+    {
+        try
+        {
+            while (await _timer!.WaitForNextTickAsync(token))
+            {
+                if (RunEngine.SimulationRunning)
+                {
+                    _points = GetLivePoints();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    // Calls GetLivePoints on the selected node, which refreshes Value/Timestamp/Quality
+    // on each DataAttributeNode's PointValue via registry.GetValue — the single source of truth.
+    private IReadOnlyList<PointValue<object>> GetLivePoints() =>
+        _lastNode?.GetLivePoints(Registry).ToList() ?? [];
+
+    private static bool ShowPoints(IModelNode node) =>
+        node is LogicalNodeNode or DataObjectNode or DataAttributeNode;
+
+    private string FormatValue(PointValue<object> pv)
+    {
+        var point = Registry.GetPoint(pv.Reference);
+        if (point is not null && IsDoubleDigital(point))
+            return TryGetDblPos(pv.Value, out eDblPos pos) ? FormatDblPos(pos) : "-";
+
+        return pv.Value switch
+        {
+            float f  => f.ToString("N2"),
+            double d => d.ToString("N2"),
+            int i    => i.ToString(),
+            long l   => l.ToString(),
+            null     => "-",
+            _        => pv.Value.ToString() ?? "-"
+        };
+    }
+
+    private static bool IsDoubleDigital(DevicePoint point) =>
+        point.LnType is eLnType.XCBR or eLnType.XSWI ||
+        (point.LnType == eLnType.CSWI && point.Fc == FunctionalConstraint.ST);
+
+    private static string FormatDblPos(eDblPos pos) => pos switch
+    {
+        eDblPos.Off          => "Off (Open)",
+        eDblPos.On           => "On (Closed)",
+        eDblPos.Intermediate => "Intermediate",
+        eDblPos.BadState     => "Bad State",
+        _                    => pos.ToString()
+    };
+
+    private static bool TryGetDblPos(object? value, out eDblPos state)
+    {
+        switch (value)
+        {
+            case eDblPos dblPos:
+                state = dblPos;
+                return true;
+            case int i when Enum.IsDefined(typeof(eDblPos), i):
+                state = (eDblPos)i;
+                return true;
+            case long l when Enum.IsDefined(typeof(eDblPos), (int)l):
+                state = (eDblPos)l;
+                return true;
+            default:
+                state = default;
+                return false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _timer?.Dispose();
+        _cts.Dispose();
+    }
+}

@@ -1,3 +1,4 @@
+using Iec61850Sim.Core.Biz.Points;
 using Iec61850Sim.Core.Iec61850;
 using Iec61850Sim.Core.Model;
 using Iec61850Sim.Core.Model.Devices;
@@ -69,35 +70,48 @@ public partial class XcbrCswiStatesGrid : ComponentBase, IDisposable
         if (!string.IsNullOrWhiteSpace(LogicalDevice))
         {
             query = query.Where(x =>
-                string.Equals(x.Position.LogicalDevice, LogicalDevice, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(x.Breaker.Position.LogicalDevice, LogicalDevice, StringComparison.OrdinalIgnoreCase));
+            {
+                var cswiPoint = registry.GetPoint(x.PositionReference);
+                var brkPoint = registry.GetPoint(x.Breaker.PositionReference);
+                return string.Equals(cswiPoint?.LogicalDevice, LogicalDevice, StringComparison.OrdinalIgnoreCase) ||
+                       string.Equals(brkPoint?.LogicalDevice, LogicalDevice, StringComparison.OrdinalIgnoreCase);
+            });
         }
 
         if (!string.IsNullOrWhiteSpace(LogicalNode))
         {
             query = query.Where(x =>
-                string.Equals(x.Position.LogicalNode, LogicalNode, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(x.Breaker.Position.LogicalNode, LogicalNode, StringComparison.OrdinalIgnoreCase));
+            {
+                var cswiPoint = registry.GetPoint(x.PositionReference);
+                var brkPoint = registry.GetPoint(x.Breaker.PositionReference);
+                return string.Equals(cswiPoint?.LogicalNode, LogicalNode, StringComparison.OrdinalIgnoreCase) ||
+                       string.Equals(brkPoint?.LogicalNode, LogicalNode, StringComparison.OrdinalIgnoreCase);
+            });
         }
 
         return query
             .SelectMany(x =>
             {
-                PointState cswiState = GetPointState(x.Position);
-                PointState xcbrState = GetPointState(x.Breaker.Position);
+                var cswiPoint = registry.GetPoint(x.PositionReference);
+                var xcbrPoint = registry.GetPoint(x.Breaker.PositionReference);
+                var cswiPv = cswiPoint is not null ? registry.GetValue<object>(x.PositionReference) : null;
+                var xcbrPv = xcbrPoint is not null ? registry.GetValue<object>(x.Breaker.PositionReference) : null;
+
+                PointState cswiState = GetPointState(cswiPv?.Value);
+                PointState xcbrState = GetPointState(xcbrPv?.Value);
 
                 return new[]
                 {
-                    new PointStateRow($"CSWI:{x.Position.Reference}", "CSWI", x.Position.Reference, cswiState.Text, cswiState.CssClass),
-                    new PointStateRow($"XCBR:{x.Breaker.Position.Reference}", "XCBR", x.Breaker.Position.Reference, xcbrState.Text, xcbrState.CssClass)
+                    new PointStateRow($"CSWI:{x.PositionReference}", "CSWI", x.PositionReference, cswiState.Text, cswiState.CssClass),
+                    new PointStateRow($"XCBR:{x.Breaker.PositionReference}", "XCBR", x.Breaker.PositionReference, xcbrState.Text, xcbrState.CssClass)
                 };
             })
             .ToList();
     }
 
-    private static PointState GetPointState(DevicePoint point)
+    private static PointState GetPointState(object? value)
     {
-        if (TryGetDblPos(point.Value, out eDblPos state))
+        if (TryGetDblPos(value, out eDblPos state))
         {
             return state switch
             {

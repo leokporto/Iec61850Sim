@@ -17,7 +17,6 @@ public class IecServerHostTests
     [Fact]
     public void Publish_WithPrimitiveValues_ShouldUpdateServerAttributes()
     {
-        // Arrange
         var context = CreateContext();
         var host = context.Host;
         try
@@ -30,26 +29,20 @@ public class IecServerHostTests
             intPoint.Value = 7;
             boolPoint.Value = true;
 
-            // Act
             host.Publish([floatPoint, intPoint, boolPoint]);
 
-            // Assert
             Assert.Equal(12.5f, host.Server.GetAttributeValue(context.FloatValueAttribute).ToFloat(), 3);
             Assert.Equal(7, host.Server.GetAttributeValue(context.IntValueAttribute).ToInt32());
             var boolValue = host.Server.GetAttributeValue(context.BoolValueAttribute);
             Assert.NotNull(boolValue);
             Assert.True(boolValue.GetBoolean());
         }
-        finally
-        {
-            host.Stop();
-        }
+        finally { host.Stop(); }
     }
 
     [Fact]
     public void Publish_WithCodeDenumInteger_ShouldUpdateAsBitString()
     {
-        // Arrange
         var context = CreateContext();
         var host = context.Host;
         try
@@ -57,24 +50,18 @@ public class IecServerHostTests
             var point = CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", eLnType.XCBR, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute);
             point.Value = 2;
 
-            // Act
             host.Publish([point]);
             var value = host.Server.GetAttributeValue(context.CodedEnumAttribute);
 
-            // Assert
             Assert.Equal(MmsType.MMS_BIT_STRING, value.GetType());
             Assert.Equal(2u, value.BitStringToUInt32BigEndian());
         }
-        finally
-        {
-            host.Stop();
-        }
+        finally { host.Stop(); }
     }
 
     [Fact]
     public void Publish_WithNullValueOrNullValueAttribute_ShouldSkipInvalidPoints()
     {
-        // Arrange
         var context = CreateContext();
         var host = context.Host;
         try
@@ -89,22 +76,16 @@ public class IecServerHostTests
             nullAttribute.ValueAttribute = null!;
             nullAttribute.Value = 10;
 
-            // Act
             host.Publish([valid, nullValue, nullAttribute]);
 
-            // Assert
             Assert.Equal(99, host.Server.GetAttributeValue(context.IntValueAttribute).ToInt32());
         }
-        finally
-        {
-            host.Stop();
-        }
+        finally { host.Stop(); }
     }
 
     [Fact]
     public void Publish_WithTimestampAndQuality_ShouldUpdateAuxiliaryAttributes()
     {
-        // Arrange
         var context = CreateContext();
         var host = context.Host;
         try
@@ -117,62 +98,57 @@ public class IecServerHostTests
             point.QualityAttribute = context.QualityAttribute;
             var qualityBefore = host.Server.GetAttributeValue(context.QualityAttribute).BitStringToUInt32BigEndian();
 
-            // Act
             host.Publish([point]);
 
-            // Assert
             var qualityValue = host.Server.GetAttributeValue(context.QualityAttribute).BitStringToUInt32BigEndian();
             var timestampValue = host.Server.GetAttributeValue(context.TimestampAttribute).GetUtcTimeAsDateTimeOffset();
 
             Assert.NotEqual(qualityBefore, qualityValue);
             Assert.True(timestampValue > DateTimeOffset.UnixEpoch);
         }
-        finally
-        {
-            host.Stop();
-        }
+        finally { host.Stop(); }
     }
 
     [Fact]
     public void ControlHandler_WithOnCommand_ShouldOperateAndReturnOk()
     {
-        // Arrange
         var context = CreateContext();
         var host = context.Host;
         try
         {
-            var breakerPos = CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", eLnType.XCBR, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
-            breakerPos.Value = 1;
+            const string breakerRef = "LD0/XCBR1.Pos.stVal";
+            const string cswiPosRef = "LD0/CSWI1.Pos.stVal";
+            const string cswiCmdRef = "LD0/CSWI1.Pos.Oper.ctlVal";
 
-            var controllerPos = CreatePoint("LD0/CSWI1.Pos.stVal", "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
-            var cmdPoint = CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.CO, context.BoolValueAttribute, equipmentName: "Q01");
+            var breakerPos = CreatePoint(breakerRef, "XCBR1", eLnType.XCBR, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
+            var controllerPos = CreatePoint(cswiPosRef, "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
+            var cmdPoint = CreatePoint(cswiCmdRef, "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.CO, context.BoolValueAttribute, equipmentName: "Q01");
 
-            var breaker = new Breaker("XCBR1", breakerPos);
-            var controller = new Cswi("CSWI1", cmdPoint, controllerPos, breaker);
+            context.Registry.Register(breakerPos);
+            context.Registry.Register(controllerPos);
+            context.Registry.Register(cmdPoint);
+            context.Registry.SetValue(new PointValue<object> { Reference = breakerRef, Value = 1, Timestamp = DateTimeOffset.UtcNow, Quality = 192 });
+
+            var breaker = new Breaker("XCBR1", breakerRef, "Q01", context.Registry);
+            var controller = new Cswi("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
 
             var method = typeof(IecServerHost).GetMethod("ControlHandler", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(method);
             var action = (ControlAction)RuntimeHelpers.GetUninitializedObject(typeof(ControlAction));
 
-            // Act
             var result = (ControlHandlerResult)method!.Invoke(host, [action, controller, new MmsValue(true), false])!;
 
-            // Assert
             Assert.Equal(ControlHandlerResult.OK, result);
-            Assert.Equal(2, breaker.Position.Value);
-            Assert.Equal(2, controller.Position.Value);
+            Assert.Equal(2, context.Registry.GetValue<object>(breakerRef).Value);
+            Assert.Equal(2, context.Registry.GetValue<object>(cswiPosRef).Value);
             Assert.Equal(2u, host.Server.GetAttributeValue(context.CodedEnumAttribute).BitStringToUInt32BigEndian());
         }
-        finally
-        {
-            host.Stop();
-        }
+        finally { host.Stop(); }
     }
 
     [Fact]
     public void CheckHandler_WhenInvoked_ShouldReturnAccepted()
     {
-        // Arrange
         var context = CreateContext();
         var host = context.Host;
         try
@@ -181,92 +157,88 @@ public class IecServerHostTests
             Assert.NotNull(method);
             var action = (ControlAction)RuntimeHelpers.GetUninitializedObject(typeof(ControlAction));
 
-            // Act
             var result = (CheckHandlerResult)method!.Invoke(host, [action, new object(), new MmsValue(true), false, false])!;
 
-            // Assert
             Assert.Equal(CheckHandlerResult.ACCEPTED, result);
         }
-        finally
-        {
-            host.Stop();
-        }
+        finally { host.Stop(); }
     }
 
     [Fact]
     public void SelectStateChanged_WithoutPendingCtlVal_ShouldNotThrow()
     {
-        // Arrange — sem ctlVal pendente no dicionário: TryGetValue retorna false → retorno antecipado
         var context = CreateContext();
         var host = context.Host;
         try
         {
-            var breakerPos = CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", eLnType.XCBR, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
-            var controllerPos = CreatePoint("LD0/CSWI1.Pos.stVal", "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
-            var cmdPoint = CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.CO, context.BoolValueAttribute, equipmentName: "Q01");
+            const string breakerRef = "LD0/XCBR1.Pos.stVal";
+            const string cswiPosRef = "LD0/CSWI1.Pos.stVal";
+            const string cswiCmdRef = "LD0/CSWI1.Pos.Oper.ctlVal";
 
-            var controller = new Cswi("CSWI1", cmdPoint, controllerPos, new Breaker("XCBR1", breakerPos));
+            var breakerPos = CreatePoint(breakerRef, "XCBR1", eLnType.XCBR, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
+            var controllerPos = CreatePoint(cswiPosRef, "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
+            var cmdPoint = CreatePoint(cswiCmdRef, "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.CO, context.BoolValueAttribute, equipmentName: "Q01");
+
+            context.Registry.Register(breakerPos);
+            context.Registry.Register(controllerPos);
+            context.Registry.Register(cmdPoint);
+
+            var breaker = new Breaker("XCBR1", breakerRef, "Q01", context.Registry);
+            var controller = new Cswi("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
+
             var method = typeof(IecServerHost).GetMethod("SelectStateChanged", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(method);
             var action = (ControlAction)RuntimeHelpers.GetUninitializedObject(typeof(ControlAction));
 
-            // Act
             var exception = Record.Exception(() =>
                 method!.Invoke(host, [action, controller, true, SelectStateChangedReason.SELECT_STATE_REASON_SELECTED]));
 
-            // Assert
             Assert.Null(exception);
         }
-        finally
-        {
-            host.Stop();
-        }
+        finally { host.Stop(); }
     }
 
     [Fact]
     public void SelectStateChanged_AfterCheckHandlerStoresCtlVal_ShouldOperateAndPublish()
     {
-        // Arrange — simula o fluxo SBO: CheckHandler (SELECT) → SelectStateChanged
         var context = CreateContext();
         var host = context.Host;
         try
         {
-            var breakerPos = CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", eLnType.XCBR, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
-            breakerPos.Value = (int)eDblPos.Off;
+            const string breakerRef = "LD0/XCBR1.Pos.stVal";
+            const string cswiPosRef = "LD0/CSWI1.Pos.stVal";
+            const string cswiCmdRef = "LD0/CSWI1.Pos.SBOw.ctlVal";
 
-            var controllerPos = CreatePoint("LD0/CSWI1.Pos.stVal", "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
-            var cmdPoint = CreatePoint("LD0/CSWI1.Pos.SBOw.ctlVal", "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.CO, context.BoolValueAttribute, equipmentName: "Q01");
+            var breakerPos = CreatePoint(breakerRef, "XCBR1", eLnType.XCBR, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
+            var controllerPos = CreatePoint(cswiPosRef, "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01");
+            var cmdPoint = CreatePoint(cswiCmdRef, "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.CO, context.BoolValueAttribute, equipmentName: "Q01");
 
-            var breaker = new Breaker("XCBR1", breakerPos);
-            var controller = new Cswi("CSWI1", cmdPoint, controllerPos, breaker);
+            context.Registry.Register(breakerPos);
+            context.Registry.Register(controllerPos);
+            context.Registry.Register(cmdPoint);
+            context.Registry.SetValue(new PointValue<object> { Reference = breakerRef, Value = (int)eDblPos.Off, Timestamp = DateTimeOffset.UtcNow, Quality = 192 });
 
-            var checkMethod = typeof(IecServerHost).GetMethod("CheckHandler", BindingFlags.Instance | BindingFlags.NonPublic);
+            var breaker = new Breaker("XCBR1", breakerRef, "Q01", context.Registry);
+            var controller = new Cswi("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
+
             var selectMethod = typeof(IecServerHost).GetMethod("SelectStateChanged", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(checkMethod);
             Assert.NotNull(selectMethod);
 
-            // CheckHandler é chamado na fase SELECT com action.IsSelect()=true
-            // Como ControlAction é uma classe nativa sem construtor público,
-            // usamos o dicionário diretamente via reflection para simular o armazenamento do ctlVal
+            // Simulate CheckHandler having stored ctlVal for this controller
             var pendingField = typeof(IecServerHost).GetField("_pendingSelectCtlVals", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(pendingField);
             var pending = (Dictionary<string, MmsValue>)pendingField!.GetValue(host)!;
-            pending[controller.Name] = new MmsValue(true); // ctlVal = true → Close
+            pending[controller.Name] = new MmsValue(true); // true → Close
 
             var action = (ControlAction)RuntimeHelpers.GetUninitializedObject(typeof(ControlAction));
 
-            // Act
             selectMethod!.Invoke(host, [action, controller, true, SelectStateChangedReason.SELECT_STATE_REASON_SELECTED]);
 
-            // Assert — breaker deve ter fechado (On = 2)
-            Assert.Equal((int)eDblPos.On, breaker.Position.Value);
-            Assert.Equal((int)eDblPos.On, controller.Position.Value);
+            Assert.Equal((int)eDblPos.On, context.Registry.GetValue<object>(breakerRef).Value);
+            Assert.Equal((int)eDblPos.On, context.Registry.GetValue<object>(cswiPosRef).Value);
             Assert.Equal(2u, host.Server.GetAttributeValue(context.CodedEnumAttribute).BitStringToUInt32BigEndian());
         }
-        finally
-        {
-            host.Stop();
-        }
+        finally { host.Stop(); }
     }
 
     private static HostContext CreateContext()
@@ -291,10 +263,11 @@ public class IecServerHostTests
 
         var registry = new PointRegistry();
         var manager = new DeviceManager();
-        var commandProcessor = new ControlCommandProcessor();
+        var commandProcessor = new ControlCommandProcessor(registry);
+
         var host = new IecServerHost(model, registry, manager, commandProcessor);
 
-        return new HostContext(host, floatDa, intDa, boolDa, qualityDa, tsDa, codedEnumDa);
+        return new HostContext(host, registry, floatDa, intDa, boolDa, qualityDa, tsDa, codedEnumDa);
     }
 
     private static DevicePoint CreatePoint(
@@ -321,6 +294,7 @@ public class IecServerHostTests
 
     private sealed record HostContext(
         IecServerHost Host,
+        PointRegistry Registry,
         DataAttribute FloatValueAttribute,
         DataAttribute IntValueAttribute,
         DataAttribute BoolValueAttribute,

@@ -1,13 +1,21 @@
-﻿using IEC61850.Common;
+using IEC61850.Common;
 using IEC61850.Server;
+using Iec61850Sim.Core.Biz.Points;
 using Iec61850Sim.Core.Iec61850;
+using Iec61850Sim.Core.Model;
 using Iec61850Sim.Core.Model.Devices;
 
 namespace Iec61850Sim.Core.Biz.Commands;
 
-
 public class ControlCommandProcessor
 {
+    private readonly PointRegistry _registry;
+
+    public ControlCommandProcessor(PointRegistry registry)
+    {
+        _registry = registry;
+    }
+
     public void Operate(Cswi controller, MmsValue ctlVal, bool test)
     {
         eDblPos pos;
@@ -26,10 +34,9 @@ public class ControlCommandProcessor
         ApplyPosition(controller, pos);
     }
 
-    private static void ApplyPosition(Cswi controller, eDblPos pos)
+    private void ApplyPosition(Cswi controller, eDblPos pos)
     {
         var breaker = controller.Breaker;
-        breaker.Position.Timestamp = DateTime.UtcNow;
 
         switch (pos)
         {
@@ -39,10 +46,17 @@ public class ControlCommandProcessor
             case eDblPos.On:
                 breaker.Close();
                 break;
+            // Intermediate / BadState: leave breaker state unchanged
         }
 
-        // Sincroniza o stVal do CSWI com o estado resultante do breaker
-        controller.Position.Value = breaker.Position.Value;
-        controller.Position.Timestamp = breaker.Position.Timestamp;
+        // Sync CSWI.Pos.stVal with current breaker value (including its timestamp)
+        var breakerValue = _registry.GetValue<object>(breaker.PositionReference);
+        _registry.SetValue(new PointValue<object>
+        {
+            Reference = controller.PositionReference,
+            Value = breakerValue.Value,
+            Timestamp = breakerValue.Timestamp,
+            Quality = breakerValue.Quality
+        });
     }
 }
