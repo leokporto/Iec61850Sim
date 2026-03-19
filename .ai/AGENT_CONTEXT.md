@@ -12,11 +12,11 @@ dotnet build src/Iec61850Sim.Desktop/Iec61850Sim.Desktop.csproj   # Windows only
 # Run
 dotnet run --project src/Iec61850Sim.Web/Iec61850Sim.Web.csproj
 
-# Tests
-dotnet test tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj
+# Tests — xUnit v3 requires dotnet run, NOT dotnet test
+dotnet run --project tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj
 
 # Run a single test class
-dotnet test tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj --filter "FullyQualifiedName~DeviceBuilderTests"
+dotnet run --project tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj -- --filter "FullyQualifiedName~DeviceBuilderTests"
 
 # Publish (self-contained, Windows)
 dotnet publish src/Iec61850Sim.Web -c Release -r win-x64 --self-contained true
@@ -56,11 +56,26 @@ The model file is resolved from the app base directory. Override using the `IEC_
 
 ```
 ModelScanner → PointRegistry → DeviceBuilder → DeviceManager
-                                                     ↓
-SimulationEngine.Step(dt) → IecServerHost.Publish()
+                    ↓                               ↓
+             ModelTreeBuilder           SimulationEngine.Step(dt) → IecServerHost.Publish()
+                    ↓
+              IModelNode tree (UI)
 ```
 
 Model traversal: `IedModel → LogicalDevice → LogicalNode → DataObject → DataAttribute`. Each `DataAttribute` becomes a `DevicePoint` in `PointRegistry`.
+
+**PointRegistry** is the single source of truth for all device point values.
+- `GetValue<T>(reference)` / `SetValue<T>(PointValue<T>)` — typed single value access
+- `GetValues(refs)` / `SetValues(values)` — batch value access
+- `SetValue` mutates `DevicePoint.Value/Quality/Timestamp` in-place; devices must NEVER write those fields directly
+
+**`PointValue<T>`** — mutable DTO used as the registry read/write currency. `Reference` and `FC` are `init`-only. `Value`, `Quality` (`ushort`, default 192 = Good), and `Timestamp` are mutable.
+
+**`IModelNode` tree** (built by `ModelTreeBuilder`):
+- `GetPoints()` returns `IEnumerable<PointValue<object>>` (static snapshot)
+- `GetLivePoints(registry)` refreshes Value/Quality/Timestamp from registry and returns live values
+- `DataAttributeNode` is the leaf — stores `PointValue<object>` with Reference+FC set at build time
+- **Important:** In real IEC 61850 models, value DAs (e.g. `f`) are nested inside structured DAs (`cVal → mag → f`), not as direct DataObject children. `ModelTreeBuilder.CollectLeafPoints` recurses through nested DAs — do not flatten this traversal.
 
 **Simulated device types:** `MeasurementDevice` (generates values), `Breaker`/`Switch` (maintain state), `Cswi` (control operations).
 
@@ -91,6 +106,8 @@ Always reference official documentation:
 
 **libiec61850 access:** Only through proper abstractions (`IecServerHost`). Do not call libiec61850 directly from Web or Desktop layers.
 
+**Value writes:** Always via `registry.SetValue<T>` or `registry.SetValues`. Never mutate `DevicePoint.Value`, `DevicePoint.Quality`, or `DevicePoint.Timestamp` directly.
+
 ## Testing
 
 - Test stack: **xUnit v3**, **NSubstitute** (mocking), **Bogus** (test data)
@@ -99,3 +116,4 @@ Always reference official documentation:
 - Naming: class `<ClassName>Tests`, method `<Method>_<Condition>_<ExpectedResult>`
 - Mock only external dependencies; never mock domain logic
 - Reproduce bugs with a failing test first, then fix
+- Run tests with `dotnet run --project`, NOT `dotnet test` (xUnit v3 requirement)

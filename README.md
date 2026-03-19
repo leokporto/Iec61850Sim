@@ -27,24 +27,19 @@ This project is useful for:
 From the repository root:
 
 ```bash
-dotnet build Iec61850Sim.Web/Iec61850Sim.Web.csproj
-``` 
+dotnet build src/Iec61850Sim.Web/Iec61850Sim.Web.csproj
+```
 
 ### 3) Run
 
 **Dev Environment:**
 
 ```bash
-dotnet run --project Iec61850Sim.Web/Iec61850Sim.Web.csproj
+dotnet run --project src/Iec61850Sim.Web/Iec61850Sim.Web.csproj
 ```
 
 
-By default, the web application runs using the ASP.NET Core launch settings:
-
-- HTTP: `http://localhost:5056`
-- HTTPS: `https://localhost:7242`
-
-At startup, the application also starts the **IEC 61850 server** on port **102**.
+By default, the application runs on `http://localhost:8080`. The IEC 61850 MMS server starts on port `102`.
 
 To stop the application, press **Ctrl+C**.
 
@@ -83,7 +78,7 @@ The project Iec61850Sim.Desktop is a Wpf project containing just a window with W
 It is possible to publish it by running the following command:
 
 ```bash
-dotnet publish Iec61850Sim.Web -c Release -r win-x64
+dotnet publish src/Iec61850Sim.Web -c Release -r win-x64
 ```
 
 ---
@@ -109,9 +104,9 @@ The simulator loads the IEC 61850 model from a config file called `Demo_Ed2.cfg`
 
 The IEC 61850 model and related files are stored under:
 
-- `Iec61850Sim.Api/Config/Demo_Ed2.cfg`
-- `Iec61850Sim.Api/Config/Demo_Ed2.icd`
-- `Iec61850Sim.Api/Config/rfc1006.cfg`
+- `src/Iec61850Sim.Web/Config/Demo_Ed2.cfg`
+- `src/Iec61850Sim.Web/Config/Demo_Ed2.icd`
+- `src/Iec61850Sim.Web/Config/rfc1006.cfg`
 
 These files are copied to the output directory during build.
 
@@ -158,11 +153,9 @@ Altough currently Ied Name is hard coded, there is already an item on backlog to
     Iec61850Sim.Web/          # Blazor Server App
   ThirdPartyRefs/           # Mz-Automation libraries (iec61850dotnet.dll and iec61850.dll). *This folder was added to .gitignore file (licensing).*
     linux/                  # Mz-Automation libraries (libiec61850.so and libiec61850.so.1.6.1)
+  tests/
+    Iec61850Sim.UnitTests/    # Unit tests for Core
 ```
-
-> ⚠️ A raiz contém também o solution file e o README, mas os demais itens são apenas pastas.
-
-Se precisar de uma visão diferente (como uma árvore de diretórios gerada por comando), só avisar!
 
 ---
 
@@ -180,6 +173,16 @@ When the application starts, it performs the following high-level flow:
 8. Periodically advances the simulation and publishes updated values
 
 The simulation loop runs continuously in the background with a timed delay between publish cycles.
+
+---
+
+## 🌳 Model Tree Viewer
+
+The web UI includes a live model tree panel that mirrors the IEC 61850 object hierarchy:
+
+**IED → Logical Device → Logical Node → Data Object → Data Attribute**
+
+Selecting a node at the Logical Node level or below displays a live point table (Reference, FC, Value, Timestamp) that auto-refreshes every 2 seconds while the simulation is running. Values are read directly from `PointRegistry` — the single source of truth for all point values.
 
 ---
 
@@ -212,12 +215,11 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 
 ## 📝 Backlog
 
-- [ ] Commands Simulation
+- [x] Commands Simulation
 - [ ] Parse scl files automatically
 - [ ] Discover Ied Server model
 - [ ] Add settings page
-- [ ] Better Simulation UI
-- [ ] Code refactoring
+- [x] Basic Simulation UI with model tree viewer
 - [ ] Upload Scl files (maybe). Those files can be passed to *ConfigFiles* folder either before the execution or over a container's image creation.
 
 ---
@@ -227,7 +229,7 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 - This is a lightweight simulator intended for testing and experimentation
 - It is not a complete IEC 61850 platform implementation
 - The current implementation source of truth is `Iec61850Sim.Core`
-- Older console-oriented documentation should no longer be considered deprecated
+- Older console-oriented documentation is deprecated.
 
 ---
 

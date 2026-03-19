@@ -109,6 +109,8 @@ Wpf Client
 Model Loader
 Model Scanner
 Point Registry
+Model Tree Builder
+IModel Node Tree (UI)
 Device Builder
 Device Manager
 Simulation Engine
@@ -123,6 +125,7 @@ Fluxo principal da aplicação:
 2. O modelo IEC 61850 é carregado
 3. Serviços são registrados no DI
 4. O modelo é escaneado
+4b. A árvore de modelo (IModelNode) é construída para uso na UI
 5. Dispositivos são criados
 6. Servidor IEC 61850 é iniciado
 7. Um BackgroundService executa a simulação
@@ -145,7 +148,7 @@ iecServerHost.Publish()
 Intervalo:
 
 ```
-100–500 ms
+1000–2000 ms
 ```
 
 ---
@@ -178,7 +181,7 @@ src/
 	Iec61850Sim.Core/
 	Iec61850Sim.Web/
 	Iec61850Sim.Desktop/
-	Iec61850Sim.Tests/
+	Iec61850Sim.UnitTests/
 ThirdPartyRefs/
     linux/
 ```
@@ -190,7 +193,7 @@ Descrição:
 | Iec61850Sim.Core    | funcionalidades principais                      |
 | Iec61850Sim.Web     | Blazor Server application                       |
 | Iec61850Sim.Desktop | aplicação WPF com WebView2                      |
-| Iec61850Sim.Tests   | projeto de testes unitários da Iec61850Sim.Core |
+| Iec61850Sim.UnitTests | projeto de testes unitários da Iec61850Sim.Core |
 | ConfigFiles         | arquivos IEC (CFG / SCL)                        |
 | Docker              | dockerfiles                                     |
 | ThirdPartyRefs      | bibliotecas libiec61850                         |
@@ -386,10 +389,29 @@ Fonte:
 
 ### DevicePoint
 
-Entidade que representa os pontos scanneados no modelo de configuração e que serão passados para o IedServer.
+Entidade que representa os pontos scanneados no modelo de configuração. Contém metadados estruturais (Reference, LogicalDevice, LogicalNode, DataObject, LnType, Fc, ValueAttribute, etc.) e estado de valor (Value, Quality, Timestamp). O estado de valor é mutado EXCLUSIVAMENTE via `PointRegistry.SetValue` — nunca diretamente.
+
 ### PointRegistry
 
-Responsável por armazenar todos os pontos descobertos no modelo.
+Fonte única de verdade (source of truth) para todos os valores de pontos do dispositivo. Armazena `DevicePoint` em um dicionário keyed pelo Reference (caminho completo do DataAttribute).
+
+API principal:
+- `Register(DevicePoint)` — registra um ponto (chamado pelo ModelScanner)
+- `GetPoint(reference)` — busca estrutural por referência
+- `GetValue<T>(reference)` / `SetValue<T>(PointValue<T>)` — acesso tipado a valores
+- `GetValues(refs)` / `SetValues(values)` — acesso em batch
+
+### PointValue<T>
+
+DTO mutável usado como moeda de troca para leitura/escrita no registro. `Reference` e `FC` são `init`-only (definidos no build). `Value`, `Quality` (ushort, padrão 192 = Good) e `Timestamp` são mutáveis e atualizados pelo registry.
+
+### ModelTreeBuilder / IModelNode
+
+Constrói a árvore do modelo IEC 61850 para uso na UI:
+- `IedNode → LogicalDeviceNode → LogicalNodeNode → DataObjectNode → DataAttributeNode`
+- `GetPoints()` retorna `IEnumerable<PointValue<object>>` (snapshot estático)
+- `GetLivePoints(registry)` atualiza Value/Quality/Timestamp da registry e retorna valores ao vivo
+- **Atenção:** Em modelos reais, DataAttributes de valor (ex. `f`) ficam aninhados dentro de DataAttributes estruturados (`cVal → mag → f`), não como filhos diretos do DataObject. O `CollectLeafPoints` do `ModelTreeBuilder` percorre recursivamente esses DAs aninhados.
 
 ### ModelScanner
 
@@ -491,7 +513,7 @@ Devem ser feitos testes unitários sobre o projeto "Iec61850Sim.Core" que é o p
 
 Os testes devem ser feitos em todos os métodos acessíveis (public). 
 
-Os testes serão inseridos em projeto externo Iec61850Sim.Tests.
+Os testes serão inseridos em projeto externo Iec61850Sim.UnitTests.
 
 Os testes devem ser criados antes da criação de qualquer novo método acessível (TDD).
 
@@ -503,6 +525,8 @@ Bibliotecas externas para testes:
 - xUnitV3
 - NSubstitute
 - Bogus
+
+Nota: xUnit v3 requer `dotnet run --project` para executar os testes — `dotnet test` não detecta os testes.
 
 ## Protocolo de Testes de comunicação
 
@@ -555,12 +579,11 @@ Um texto deverá ser disponibilizada para inclusão neste arquivo.
 Itens registrados:
 
 
-- [ ] Commands Simulation
+- [x] Commands Simulation
 - [ ] Parse scl files automatically
 - [ ] Discover Ied Server model
 - [ ] Add settings page
-- [ ] Better Simulation UI
-- [ ] Code refactoring
+- [x] Better Simulation UI (model tree viewer implementado)
 - [ ] Upload Scl files
 
 
