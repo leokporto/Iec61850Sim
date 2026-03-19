@@ -11,6 +11,8 @@ This project is useful for:
 - Running a lightweight self-hosted simulator for development and integration scenarios
 - Experimenting with simulated device behavior and periodic value publication
 
+<img src="./docs/imgs/screenshot1.png" alt="Iec61850Sim screenshot" width="600">
+
 ---
 
 ## 🚀 Quick Start
