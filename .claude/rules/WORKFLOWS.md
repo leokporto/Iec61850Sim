@@ -11,4 +11,5 @@
 - Never access libiec61850 directly outside abstractions
 - Simulation: fit SimulationEngine, never block BackgroundService, keep loop deterministic
 - IEC 61850: use correct object references, never invent attributes, validate against model
+- Value writes: always via `registry.SetValue` / `registry.SetValues`; never mutate `DevicePoint.Value/Quality/Timestamp` directly
 - Bugs: identify root cause → failing test → fix → validate

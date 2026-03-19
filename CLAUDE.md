@@ -12,11 +12,11 @@ dotnet build src/Iec61850Sim.Desktop/Iec61850Sim.Desktop.csproj   # Windows only
 # Run
 dotnet run --project src/Iec61850Sim.Web/Iec61850Sim.Web.csproj
 
-# Tests
-dotnet test tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj
+# Tests — xUnit v3 requires dotnet run, NOT dotnet test
+dotnet run --project tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj
 
 # Run a single test class
-dotnet test tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj --filter "FullyQualifiedName~DeviceBuilderTests"
+dotnet run --project tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj -- --filter "FullyQualifiedName~DeviceBuilderTests"
 
 # Publish (self-contained, Windows)
 dotnet publish src/Iec61850Sim.Web -c Release -r win-x64 --self-contained true
@@ -32,7 +32,7 @@ The model file is resolved from the app base directory. Override using the `IEC_
 
 ## Architecture
 
-**Tech stack:** C# .NET 10, ASP.NET Core, Blazor Server, WPF+WebView2 (Windows only), MZ-Automation libiec61850 .NET binding.
+**Tech stack:** C# .NET 10, ASP.NET Core, Blazor Server, Mudblazor, WPF+WebView2 (Windows only), MZ-Automation libiec61850 .NET binding.
 
 **Projects:**
 
@@ -56,8 +56,10 @@ The model file is resolved from the app base directory. Override using the `IEC_
 
 ```
 ModelScanner → PointRegistry → DeviceBuilder → DeviceManager
-                                                     ↓
-SimulationEngine.Step(dt) → IecServerHost.Publish()
+                    ↓                               ↓
+             ModelTreeBuilder           SimulationEngine.Step(dt) → IecServerHost.Publish()
+                    ↓
+              IModelNode tree (UI)
 ```
 
 Model traversal: `IedModel → LogicalDevice → LogicalNode → DataObject → DataAttribute`. Each `DataAttribute` becomes a `DevicePoint` in `PointRegistry`.
@@ -66,7 +68,22 @@ Model traversal: `IedModel → LogicalDevice → LogicalNode → DataObject → 
 
 **Simulation loop** (in `SimulationService`): calls `simulation.Step()` then `iecServerHost.Publish()` every 1000–2000 ms. Must not block the ASP.NET pipeline.
 
-**PointRegistry** is the single source of truth for all device points. `DeviceBuilder` creates device abstractions based on the registry, which are then used by the simulation engine and IEC server.
+**PointRegistry** is the single source of truth for all device point values.
+- `Register(DevicePoint)` — adds a point (called by `ModelScanner`)
+- `GetPoint(reference)` — structural lookup by full DA object reference
+- `GetValue<T>(reference)` / `SetValue<T>(PointValue<T>)` — typed single value access
+- `GetValues(refs)` / `SetValues(values)` — batch value access
+- `SetValue` mutates `DevicePoint.Value/Quality/Timestamp` in-place; devices must NEVER write those fields directly
+
+**`PointValue<T>`** — mutable DTO used as the registry read/write currency. `Reference` and `FC` are `init`-only (set at build time). `Value`, `Quality` (`ushort`, default 192 = Good), and `Timestamp` are mutable and refreshed from the registry on each `GetLivePoints` call.
+
+**`IModelNode` tree** (built by `ModelTreeBuilder`):
+- `GetPoints()` — returns `IEnumerable<PointValue<object>>` (static, build-time snapshot)
+- `GetLivePoints(registry)` — refreshes `Value/Quality/Timestamp` from registry and returns live values
+- `DataAttributeNode` is the leaf; stores a `PointValue<object>` with `Reference`+`FC` set at build time
+- **Important:** In real IEC 61850 models, value DataAttributes (e.g., `f`) are nested inside structured DAs (`cVal → mag → f`), NOT as direct children of the DataObject. `ModelTreeBuilder.CollectLeafPoints` recurses through nested DAs to reach them — do not flatten this traversal.
+
+**Mudblazor reference** - https://www.mudblazor.com/docs/overview
 
 ### Architecture Principles
 
@@ -78,6 +95,10 @@ Prefer vertical slices for organization.
 **Device creation:** Always go through `DeviceBuilder` → `DeviceManager`. Direct instantiation is not allowed.
 
 **libiec61850 access:** Only through proper abstractions (`IecServerHost`). Do not call libiec61850 directly from Web or Desktop layers.
+
+**Value writes:** Always via `registry.SetValue<T>` or `registry.SetValues`. Never mutate `DevicePoint.Value`, `DevicePoint.Quality`, or `DevicePoint.Timestamp` directly.
+
+**Model tree traversal:** `ModelTreeBuilder.CollectLeafPoints` must recurse through nested DataAttributes to reach actual leaf DAs. In real models, value attributes like `f` live inside `cVal → mag → f` (all DataAttributes), not as direct DataObject children. Direct-children-only iteration will only find description (`d`) attributes.
 
 ## Skills disponíveis
 - `libiec61850` — consultar SEMPRE antes de usar qualquer classe ou método da biblioteca
