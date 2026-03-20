@@ -71,6 +71,13 @@ public class ModelScanner
         }
     }
 
+    private static bool IsStringType(DataAttributeType type) =>
+        type is DataAttributeType.VISIBLE_STRING_32
+            or DataAttributeType.VISIBLE_STRING_64
+            or DataAttributeType.VISIBLE_STRING_65
+            or DataAttributeType.VISIBLE_STRING_129
+            or DataAttributeType.VISIBLE_STRING_255;
+
     private void ProcessLeafAttribute(DataAttribute da, Dictionary<string, DevicePoint> points)
     {
         ExtractNodeInfo(da,
@@ -82,9 +89,11 @@ public class ModelScanner
 
         var reference = da.GetObjectReference();
 
-        // Chave agrupadora inclui FC para evitar colisão entre CO e ST do mesmo DO
-        // Ex: ProtCtrl/Obj1CSWI1.Pos[CO] e ProtCtrl/Obj1CSWI1.Pos[ST] ficam separados
-        var groupKey = $"{ld}/{ln}.{dataObject}[{da.FC}]";
+        // String DAs each get their own key to avoid all NamPlt/PhyNam attributes collapsing
+        // into one DevicePoint. Non-string DAs still group by DO+FC as before.
+        var groupKey = IsStringType(da.Type)
+            ? $"{ld}/{ln}.{dataObject}.{da.GetName()}[{da.FC}]"
+            : $"{ld}/{ln}.{dataObject}[{da.FC}]";
 
         if (!points.TryGetValue(groupKey, out var point))
         {
@@ -162,7 +171,7 @@ public class ModelScanner
             return;
         }
 
-        if (ValueNames.Contains(name))
+        if (ValueNames.Contains(name) || IsStringType(type))
         {
             point.ValueAttribute ??= da;
             return;

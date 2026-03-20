@@ -11,6 +11,8 @@ public class DeviceBuilder
         BuildBreakers(registry, manager);
         BuildMeasurements(registry, manager);
         BuildControllers(registry, manager);
+        BuildLLN0Devices(registry, manager);
+        BuildLPHDDevices(registry, manager);
     }
 
     private void BuildBreakers(PointRegistry registry, DeviceManager manager)
@@ -41,6 +43,32 @@ public class DeviceBuilder
             var refs = group.Select(p => p.Reference);
             var device = new MeasurementDevice(group.Key, refs, registry);
             manager.Register(device);
+        }
+    }
+
+    private void BuildLLN0Devices(PointRegistry registry, DeviceManager manager)
+    {
+        var groups = registry.All
+            .Where(p => p.LnType == eLnType.LLN0 && p.ValueAttribute != null)
+            .GroupBy(p => p.LogicalDevice);
+
+        foreach (var g in groups)
+        {
+            var refs = g.Select(p => p.Reference).ToList();
+            manager.Register(new LLN0Device(g.Key, refs, registry));
+        }
+    }
+
+    private void BuildLPHDDevices(PointRegistry registry, DeviceManager manager)
+    {
+        var groups = registry.All
+            .Where(p => p.LnType == eLnType.LPHD && p.ValueAttribute != null)
+            .GroupBy(p => p.LogicalDevice);
+
+        foreach (var g in groups)
+        {
+            var refs = g.Select(p => p.Reference).ToList();
+            manager.Register(new LPHDDevice(g.Key, refs, registry));
         }
     }
 

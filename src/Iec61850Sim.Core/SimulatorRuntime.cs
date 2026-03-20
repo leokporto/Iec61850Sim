@@ -37,7 +37,20 @@ public class RuntimeEngine
 
         ServerRunning = true;
 
+        InitializeStaticDevices();
+
         Console.WriteLine("IEC server started");
+    }
+
+    private void InitializeStaticDevices()
+    {
+        foreach (var lln0 in devices.LLN0Devices)
+            lln0.Initialize(iecHost.ReadAttributeValue);
+
+        foreach (var lphd in devices.LPHDDevices)
+            lphd.Initialize(iecHost.ReadAttributeValue);
+
+        iecHost.Publish();
     }
 
     public void StopServer()

@@ -12,6 +12,10 @@ public class DeviceManager
 
     public List<MeasurementDevice> Measurements { get; } = new();
 
+    public List<LLN0Device> LLN0Devices { get; } = new();
+
+    public List<LPHDDevice> LPHDDevices { get; } = new();
+
     public void Register(DeviceBase device)
     {
         devices.Add(device);
@@ -24,6 +28,14 @@ public class DeviceManager
 
             case MeasurementDevice m:
                 Measurements.Add(m);
+                break;
+
+            case LLN0Device lln0:
+                LLN0Devices.Add(lln0);
+                break;
+
+            case LPHDDevice lphd:
+                LPHDDevices.Add(lphd);
                 break;
         }
     }

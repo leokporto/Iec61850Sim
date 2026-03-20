@@ -62,6 +62,53 @@ public class ModelScannerTests
     }
 
     [Fact]
+    public void Scan_WithStringDataAttributes_ShouldRegisterSeparatePointsPerAttribute()
+    {
+        // Arrange — NamPlt with vendor and swRev: each string DA should become its own DevicePoint
+        var model = new IedModel("IED_TEST");
+        var ld = new LogicalDevice("LD0", model);
+        var lln0 = new LogicalNode("LLN0", ld);
+        var namPlt = new DataObject("NamPlt", lln0);
+
+        var vendor = new DataAttribute("vendor", namPlt, DataAttributeType.VISIBLE_STRING_32, FunctionalConstraint.DC, TriggerOptions.NONE, 0);
+        var swRev = new DataAttribute("swRev", namPlt, DataAttributeType.VISIBLE_STRING_32, FunctionalConstraint.DC, TriggerOptions.NONE, 0);
+
+        var registry = new PointRegistry();
+        var scanner = new ModelScanner();
+
+        // Act
+        scanner.Scan(model, registry, ["LD0"]);
+        var points = registry.All.ToList();
+
+        // Assert — two separate DevicePoints, one per string DA
+        Assert.Equal(2, points.Count);
+        Assert.Contains(points, p => p.ValueAttribute?.GetName() == "vendor");
+        Assert.Contains(points, p => p.ValueAttribute?.GetName() == "swRev");
+    }
+
+    [Fact]
+    public void Scan_WithStringDataAttribute_ShouldSetItAsValueAttribute()
+    {
+        var model = new IedModel("IED_TEST");
+        var ld = new LogicalDevice("LD0", model);
+        var lln0 = new LogicalNode("LLN0", ld);
+        var namPlt = new DataObject("NamPlt", lln0);
+
+        new DataAttribute("vendor", namPlt, DataAttributeType.VISIBLE_STRING_32, FunctionalConstraint.DC, TriggerOptions.NONE, 0);
+
+        var registry = new PointRegistry();
+        var scanner = new ModelScanner();
+
+        scanner.Scan(model, registry, ["LD0"]);
+        var point = Assert.Single(registry.All);
+
+        Assert.NotNull(point.ValueAttribute);
+        Assert.Equal("vendor", point.ValueAttribute!.GetName());
+        Assert.Equal("NamPlt", point.DataObject);
+        Assert.Equal(eLnType.LLN0, point.LnType);
+    }
+
+    [Fact]
     public void Scan_WithSameDataObjectAndDifferentFc_ShouldRegisterSeparatedPoints()
     {
         // Arrange

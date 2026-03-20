@@ -119,7 +119,38 @@ public class IecServerHost
             case bool b:
                 _server.UpdateBooleanAttributeValue(point.ValueAttribute, b);
                 break;
+
+            case string s:
+                _server.UpdateVisibleStringAttributeValue(point.ValueAttribute, s);
+                break;
         }
+    }
+
+    /// <summary>
+    /// Reads the current value of a DataAttribute from the IEC server model.
+    /// Returns null when the attribute type is not handled or the value is unavailable.
+    /// </summary>
+    public object? ReadAttributeValue(DataAttribute da)
+    {
+        var mmsValue = _server.GetAttributeValue(da);
+        if (mmsValue == null)
+            return null;
+
+        var mmsType = mmsValue.GetType();
+
+        if (mmsType == MmsType.MMS_VISIBLE_STRING)
+        {
+            var s = mmsValue.ToString();
+            return string.IsNullOrEmpty(s) ? null : s;
+        }
+
+        if (mmsType == MmsType.MMS_INTEGER)
+            return mmsValue.ToInt32();
+
+        if (mmsType == MmsType.MMS_BOOLEAN)
+            return mmsValue.GetBoolean();
+
+        return null;
     }
 
     private void RegisterControlHandlers()

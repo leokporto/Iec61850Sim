@@ -11,7 +11,8 @@
       "Bash(dotnet build:*)",
       "Bash(ln -sf /home/leokporto/GitHubRepos/Iec61850Sim/ThirdPartyRefs/libiec61850.so.1.6.1 /home/leokporto/GitHubRepos/Iec61850Sim/ThirdPartyRefs/iec61850.dll)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebSearch"
     ]
   }
 }

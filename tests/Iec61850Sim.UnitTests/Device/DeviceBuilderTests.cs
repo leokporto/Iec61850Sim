@@ -205,6 +205,74 @@ public class DeviceBuilderTests
     }
 
     [Fact]
+    public void Build_WithLLN0Points_ShouldRegisterLLN0DevicePerLogicalDevice()
+    {
+        // Arrange
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint(
+            reference: "LD0/LLN0.Mod.stVal",
+            equipmentName: "",
+            logicalNode: "LLN0",
+            dataObject: "Mod",
+            lnType: eLnType.LLN0,
+            fc: FunctionalConstraint.ST,
+            hasValueAttribute: true));
+
+        registry.Register(CreatePoint(
+            reference: "LD0/LLN0.NamPlt.vendor",
+            equipmentName: "",
+            logicalNode: "LLN0",
+            dataObject: "NamPlt",
+            lnType: eLnType.LLN0,
+            fc: FunctionalConstraint.DC,
+            hasValueAttribute: true));
+
+        // Act
+        sut.Build(registry, manager);
+
+        // Assert
+        Assert.Single(manager.LLN0Devices);
+        Assert.Equal("LLN0_LD0", manager.LLN0Devices[0].Name);
+    }
+
+    [Fact]
+    public void Build_WithLPHDPoints_ShouldRegisterLPHDDevicePerLogicalDevice()
+    {
+        // Arrange
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint(
+            reference: "LD0/LPHD1.PhyHealth.stVal",
+            equipmentName: "",
+            logicalNode: "LPHD1",
+            dataObject: "PhyHealth",
+            lnType: eLnType.LPHD,
+            fc: FunctionalConstraint.ST,
+            hasValueAttribute: true));
+
+        registry.Register(CreatePoint(
+            reference: "LD0/LPHD1.PhyNam.vendor",
+            equipmentName: "",
+            logicalNode: "LPHD1",
+            dataObject: "PhyNam",
+            lnType: eLnType.LPHD,
+            fc: FunctionalConstraint.DC,
+            hasValueAttribute: true));
+
+        // Act
+        sut.Build(registry, manager);
+
+        // Assert
+        Assert.Single(manager.LPHDDevices);
+        Assert.Equal("LPHD_LD0", manager.LPHDDevices[0].Name);
+    }
+
+    [Fact]
     public void Build_WithDuplicateXcbrStPosPointsInSameLogicalNode_ShouldThrowInvalidOperationException()
     {
         // Arrange
