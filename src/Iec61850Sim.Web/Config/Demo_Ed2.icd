@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SCL xmlns="http://www.iec.ch/61850/2003/SCL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.iec.ch/61850/2003/SCL SCL.xsd" version="2007" revision="B" release="4">
- <Header id="INFO TECH SCL" nameStructure="IEDName"/>
+ <Header id="Iec61850Sim SCL" nameStructure="IEDName"/>
  <Communication>
   <SubNetwork name="NONE">
    <ConnectedAP iedName="Demo" apName="P1">
@@ -35,7 +35,7 @@
    </ConnectedAP>
   </SubNetwork>
  </Communication>
- <IED name="Demo" type="S61850 for PC" manufacturer="INFO TECH" configVersion="1.0" originalSclVersion="2007" originalSclRevision="B" originalSclRelease="4">
+ <IED name="Demo" type="S61850 for PC" manufacturer="Iec61850Sim" configVersion="1.0" originalSclVersion="2007" originalSclRevision="B" originalSclRelease="4">
   <Services nameLength="64">
    <DynAssociation max="10"/>
    <SettingGroups>
@@ -109,7 +109,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -133,7 +133,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -165,7 +165,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -213,7 +213,7 @@
      <LN lnType="LPHD_0" lnClass="LPHD" prefix="" inst="1">
       <DOI name="PhyNam">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>IEC61850Sim</Val>
        </DAI>
        <DAI name="hwRev" valKind="RO">
         <Val>HW/2008/1</Val>
@@ -239,7 +239,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -344,7 +344,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -371,7 +371,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -389,7 +389,7 @@
       </DOI>
       <DOI name="NamPlt">
         <DAI name="vendor" valKind="RO">
-          <Val>INFO TECH</Val>
+          <Val>Iec61850Sim</Val>
         </DAI>
         <DAI name="swRev" valKind="RO">
           <Val>1.0</Val>
@@ -407,7 +407,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -432,7 +432,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -445,7 +445,7 @@
      <LN lnType="LPHD_0" lnClass="LPHD" prefix="" inst="1">
       <DOI name="PhyNam">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="hwRev" valKind="RO">
         <Val>HW/2008/1</Val>
@@ -476,7 +476,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -504,7 +504,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -537,7 +537,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -575,7 +575,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>
@@ -603,7 +603,7 @@
       </DOI>
       <DOI name="NamPlt">
        <DAI name="vendor" valKind="RO">
-        <Val>INFO TECH</Val>
+        <Val>Iec61850Sim</Val>
        </DAI>
        <DAI name="swRev" valKind="RO">
         <Val>1.0</Val>

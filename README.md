@@ -75,7 +75,7 @@ After publishing, you can execute the `Iec61850.Web.exe` file to run the applica
 
 **Wpf with WebView2 (Windows only)**
 
-The project Iec61850Sim.Desktop is a Wpf project containing just a window with WebView2 control. 
+The project Iec61850Sim.Desktop is a Wpf project containing just a window with WebView2 control.
 
 It is possible to publish it by running the following command:
 
@@ -146,7 +146,7 @@ Altough currently Ied Name is hard coded, there is already an item on backlog to
 
 ```markdown
   Iec61850Sim.slnx          # Solution file
-  README.md                 
+  README.md
   ConfigFiles/              # Config files folder (.cfg and SCL files)
   Docker/                   # Docker files
   src
@@ -221,6 +221,12 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 - [ ] Parse scl files automatically
 - [ ] Discover Ied Server model
 - [ ] Add settings page
+- [ ] Add available Ips page
+- [ ] Add port selection field (textbox)
+- [ ] Add reports support
+- [ ] Add remaining devices
+- [ ] Add COMTRADE support
+- [ ] Add FC Filter over devices point panel
 - [x] Basic Simulation UI with model tree viewer
 - [ ] Upload Scl files (maybe). Those files can be passed to *ConfigFiles* folder either before the execution or over a container's image creation.
 
