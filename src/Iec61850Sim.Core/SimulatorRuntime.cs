@@ -44,11 +44,17 @@ public class RuntimeEngine
 
     private void InitializeStaticDevices()
     {
+        foreach (var xcbr in devices.Breakers)
+            xcbr.Initialize(iecHost.ReadAttributeValue);
+
         foreach (var lln0 in devices.LLN0Devices)
             lln0.Initialize(iecHost.ReadAttributeValue);
 
         foreach (var lphd in devices.LPHDDevices)
             lphd.Initialize(iecHost.ReadAttributeValue);
+
+        foreach (var cswi in devices.Controllers)
+            cswi.Initialize(iecHost.ReadAttributeValue);
 
         iecHost.Publish();
     }

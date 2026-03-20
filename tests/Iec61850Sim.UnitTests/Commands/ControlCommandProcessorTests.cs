@@ -80,6 +80,84 @@ public class ControlCommandProcessorTests
         Assert.Equal(2, registry.GetValue<object>(CswiPosRef).Value);
     }
 
+    // ── CSWI Loc blocking ─────────────────────────────────────────────────
+
+    [Fact]
+    public void Operate_WhenCswiLocIsTrue_ShouldNotChangePosition()
+    {
+        var (sut, controller, registry) = CreateControllerWithLoc();
+        registry.SetValue(new PointValue<object> { Reference = CswiLocRef, Value = true, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+        registry.SetValue(new PointValue<object> { Reference = BreakerPosRef, Value = 1, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        sut.Operate(controller, new MmsValue(true), test: false);
+
+        Assert.Equal(1, registry.GetValue<object>(BreakerPosRef).Value);
+    }
+
+    [Fact]
+    public void Operate_WhenCswiLocIsFalse_ShouldOperateNormally()
+    {
+        var (sut, controller, registry) = CreateControllerWithLoc();
+        registry.SetValue(new PointValue<object> { Reference = CswiLocRef, Value = false, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        sut.Operate(controller, new MmsValue(true), test: false);
+
+        Assert.Equal(2, registry.GetValue<object>(BreakerPosRef).Value);
+    }
+
+    // ── OpCntRs ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Operate_WhenSuccessful_ShouldIncrementOpCntRs()
+    {
+        var (sut, controller, registry) = CreateControllerWithOptionals();
+        registry.SetValue(new PointValue<object> { Reference = CswiOpCntRsRef, Value = 2, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        sut.Operate(controller, new MmsValue(true), test: false);
+
+        Assert.Equal(3, registry.GetValue<object>(CswiOpCntRsRef).Value);
+    }
+
+    [Fact]
+    public void Operate_WhenSuccessfulOpen_ShouldSetOpOpnTrueAndOpClsFalse()
+    {
+        var (sut, controller, registry) = CreateControllerWithOptionals();
+
+        sut.Operate(controller, new MmsValue(false), test: false); // open
+
+        Assert.Equal(true, registry.GetValue<object>(CswiOpOpnRef).Value);
+        Assert.Equal(false, registry.GetValue<object>(CswiOpClsRef).Value);
+    }
+
+    [Fact]
+    public void Operate_WhenSuccessfulClose_ShouldSetOpClsTrueAndOpOpnFalse()
+    {
+        var (sut, controller, registry) = CreateControllerWithOptionals();
+
+        sut.Operate(controller, new MmsValue(true), test: false); // close
+
+        Assert.Equal(false, registry.GetValue<object>(CswiOpOpnRef).Value);
+        Assert.Equal(true, registry.GetValue<object>(CswiOpClsRef).Value);
+    }
+
+    [Fact]
+    public void Operate_WhenIntermediatePosition_ShouldNotIncrementOpCntRs()
+    {
+        var (sut, controller, registry) = CreateControllerWithOptionals();
+        registry.SetValue(new PointValue<object> { Reference = CswiOpCntRsRef, Value = 5, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        sut.Operate(controller, new MmsValue((int)eDblPos.Intermediate), test: false);
+
+        Assert.Equal(5, registry.GetValue<object>(CswiOpCntRsRef).Value);
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────
+
+    private const string CswiLocRef = "LD0/CSWI1.Loc.stVal";
+    private const string CswiOpCntRsRef = "LD0/CSWI1.OpCntRs.stVal";
+    private const string CswiOpOpnRef = "LD0/CSWI1.OpOpn.stVal";
+    private const string CswiOpClsRef = "LD0/CSWI1.OpCls.stVal";
+
     private static (ControlCommandProcessor sut, CSWI controller, PointRegistry registry) CreateController()
     {
         var registry = new PointRegistry();
@@ -101,6 +179,36 @@ public class ControlCommandProcessorTests
         var cswi = new CSWI("CSWI1", CswiCmdRef, CswiPosRef, breaker, registry);
         var sut = new ControlCommandProcessor(registry);
 
+        return (sut, cswi, registry);
+    }
+
+    private static (ControlCommandProcessor sut, CSWI controller, PointRegistry registry) CreateControllerWithLoc()
+    {
+        var (sut, cswi, registry) = CreateController();
+
+        registry.Register(DevicePointFactory.CreatePoint(CswiLocRef, "CSWI1", "Loc", eLnType.CSWI, FunctionalConstraint.ST));
+        registry.SetValue(new PointValue<object> { Reference = CswiLocRef, Value = false, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        var cswiWithLoc = new CSWI(cswi.Name, cswi.CommandReference, cswi.PositionReference, cswi.Xcbr, registry, locRef: CswiLocRef);
+
+        return (sut, cswiWithLoc, registry);
+    }
+
+    private static (ControlCommandProcessor sut, CSWI controller, PointRegistry registry) CreateControllerWithOptionals()
+    {
+        var (sut, _, registry) = CreateController();
+
+        registry.Register(DevicePointFactory.CreatePoint(CswiOpCntRsRef, "CSWI1", "OpCntRs", eLnType.CSWI, FunctionalConstraint.ST));
+        registry.Register(DevicePointFactory.CreatePoint(CswiOpOpnRef, "CSWI1", "OpOpn", eLnType.CSWI, FunctionalConstraint.ST));
+        registry.Register(DevicePointFactory.CreatePoint(CswiOpClsRef, "CSWI1", "OpCls", eLnType.CSWI, FunctionalConstraint.ST));
+
+        registry.SetValue(new PointValue<object> { Reference = CswiOpCntRsRef, Value = 0, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+        registry.SetValue(new PointValue<object> { Reference = CswiOpOpnRef, Value = false, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+        registry.SetValue(new PointValue<object> { Reference = CswiOpClsRef, Value = false, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        var breaker = new XCBR("XCBR1", BreakerPosRef, "Q01", registry);
+        var cswi = new CSWI("CSWI1", CswiCmdRef, CswiPosRef, breaker, registry,
+            opCntRsRef: CswiOpCntRsRef, opOpnRef: CswiOpOpnRef, opClsRef: CswiOpClsRef);
 
         return (sut, cswi, registry);
     }

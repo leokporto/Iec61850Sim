@@ -273,6 +273,48 @@ public class DeviceBuilderTests
     }
 
     [Fact]
+    public void Build_WithCswiHavingLocPoint_ShouldPassLocRefToController()
+    {
+        // Arrange
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint("LD0/XCBR1.Pos.stVal", "Q01", "XCBR1", "Pos", eLnType.XCBR, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.CO, false));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.stVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CSWI1.Loc.stVal", "Q01", "CSWI1", "Loc", eLnType.CSWI, FunctionalConstraint.ST, true));
+
+        // Act
+        sut.Build(registry, manager);
+
+        // Assert
+        Assert.Single(manager.Controllers);
+        Assert.Equal("LD0/CSWI1.Loc.stVal", manager.Controllers[0].LocReference);
+    }
+
+    [Fact]
+    public void Build_WithCswiHavingOpCntRsPoint_ShouldPassOpCntRsRefToController()
+    {
+        // Arrange
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint("LD0/XCBR1.Pos.stVal", "Q01", "XCBR1", "Pos", eLnType.XCBR, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.CO, false));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.stVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CSWI1.OpCntRs.stVal", "Q01", "CSWI1", "OpCntRs", eLnType.CSWI, FunctionalConstraint.ST, true));
+
+        // Act
+        sut.Build(registry, manager);
+
+        // Assert
+        Assert.Single(manager.Controllers);
+        Assert.Equal("LD0/CSWI1.OpCntRs.stVal", manager.Controllers[0].OpCntRsReference);
+    }
+
+    [Fact]
     public void Build_WithDuplicateXcbrStPosPointsInSameLogicalNode_ShouldThrowInvalidOperationException()
     {
         // Arrange

@@ -224,7 +224,12 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 - [ ] Add available Ips page
 - [ ] Add port selection field (textbox)
 - [ ] Add reports support
-- [ ] Add remaining devices
+- [ ] Add datasets support
+- [x] Add LLN0 LN support
+- [x] Add LPHD LN support
+- [x] Add XCBR and CSWI support
+- [ ] Add CILO LN support
+- [ ] Add XSWI LN support
 - [ ] Add COMTRADE support
 - [ ] Add FC Filter over devices point panel
 - [x] Basic Simulation UI with model tree viewer

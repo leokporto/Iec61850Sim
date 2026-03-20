@@ -1,22 +1,44 @@
+using IEC61850.Server;
+using Iec61850Sim.Core.Model;
 using Iec61850Sim.Core.Points;
 
 namespace Iec61850Sim.Core.Device;
 
 /// <summary>
-/// Switch controller (CSWI on IEC61850).
-/// Responsible for commands; delegates physical switching to the associated Breaker (XCBR).
+/// Switch controller (CSWI on IEC 61850).
+/// Validates and delegates physical switching to the associated breaker (XCBR).
+/// Optional points (Loc, OpCntRs, OpOpn, OpCls) only participate in logic when present in the model.
 /// </summary>
 public class CSWI : DeviceBase
 {
+    private static readonly Dictionary<string, object> Defaults = new()
+    {
+        ["Loc.stVal"] = false,
+        ["OpCntRs.stVal"] = 0
+    };
+
     private readonly IPointRegistry _registry;
 
-    public CSWI(string name, string commandReference, string positionReference, XCBR xcbr, IPointRegistry registry)
+    public CSWI(
+        string name,
+        string commandReference,
+        string positionReference,
+        XCBR xcbr,
+        IPointRegistry registry,
+        string? locRef = null,
+        string? opCntRsRef = null,
+        string? opOpnRef = null,
+        string? opClsRef = null)
         : base(name)
     {
         CommandReference = commandReference;
         PositionReference = positionReference;
         Xcbr = xcbr;
         _registry = registry;
+        LocReference = locRef;
+        OpCntRsReference = opCntRsRef;
+        OpOpnReference = opOpnRef;
+        OpClsReference = opClsRef;
     }
 
     /// <summary>The breaker (XCBR) controlled by this CSWI.</summary>
@@ -28,6 +50,78 @@ public class CSWI : DeviceBase
     /// <summary>Reference of the ST point mirroring the breaker position (CSWI.Pos.stVal).</summary>
     public string PositionReference { get; }
 
+    // ── Optional point references ─────────────────────────────────────────
+
+    /// <summary>CSWI.Loc.stVal — local/remote mode indicator. Null when not in model.</summary>
+    public string? LocReference { get; }
+
+    /// <summary>CSWI.OpCntRs.stVal — resettable operation counter. Null when not in model.</summary>
+    public string? OpCntRsReference { get; }
+
+    /// <summary>CSWI.OpOpn.stVal — transient open-operation indicator. Null when not in model.</summary>
+    public string? OpOpnReference { get; }
+
+    /// <summary>CSWI.OpCls.stVal — transient close-operation indicator. Null when not in model.</summary>
+    public string? OpClsReference { get; }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Reads current model values via <paramref name="readAttributeValue"/> and initializes
+    /// optional DOs (Loc, OpCntRs) in the registry. Applies defaults for type-default values.
+    /// </summary>
+    public void Initialize(Func<DataAttribute, object?> readAttributeValue)
+    {
+        foreach (var pointRef in new[] { LocReference, OpCntRsReference }.Where(r => r != null))
+        {
+            var point = _registry.GetPoint(pointRef!);
+            if (point?.ValueAttribute == null)
+                continue;
+
+            var cfgValue = readAttributeValue(point.ValueAttribute);
+            var key = $"{point.DataObject}.{point.ValueAttribute.GetName()}";
+
+            var effectiveValue = IsTypeDefault(cfgValue)
+                ? Defaults.GetValueOrDefault(key)
+                : cfgValue;
+
+            if (effectiveValue == null)
+                continue;
+
+            _registry.SetValue(new PointValue<object>
+            {
+                Reference = pointRef!,
+                Value = effectiveValue,
+                Quality = 192,
+                Timestamp = DateTimeOffset.UtcNow
+            });
+        }
+    }
+
+    /// <summary>
+    /// Sets Loc=<paramref name="value"/> on both CSWI.Loc and XCBR.Loc (when each ref exists).
+    /// </summary>
+    public void SyncLoc(bool value)
+    {
+        if (LocReference != null)
+            _registry.SetValue(new PointValue<object>
+            {
+                Reference = LocReference,
+                Value = value,
+                Quality = 192,
+                Timestamp = DateTimeOffset.UtcNow
+            });
+
+        if (Xcbr.LocReference != null)
+            _registry.SetValue(new PointValue<object>
+            {
+                Reference = Xcbr.LocReference,
+                Value = value,
+                Quality = 192,
+                Timestamp = DateTimeOffset.UtcNow
+            });
+    }
+
     public void BindBreaker(XCBR xcbr) => Xcbr = xcbr;
 
     public void Operate(bool close)
@@ -37,4 +131,13 @@ public class CSWI : DeviceBase
     }
 
     public override void Step(double dt) { }
+
+    private static bool IsTypeDefault(object? value) => value switch
+    {
+        null => true,
+        string s => string.IsNullOrEmpty(s),
+        int i => i == 0,
+        bool b => !b,
+        _ => true
+    };
 }

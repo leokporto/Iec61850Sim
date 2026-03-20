@@ -18,14 +18,20 @@ public class DeviceBuilder
     private void BuildBreakers(PointRegistry registry, DeviceManager manager)
     {
         var groups = registry.All
-            .Where(p => p.LnType == eLnType.XCBR && p.DataObject == "Pos"
-            && p.Fc == FunctionalConstraint.ST && p.ValueAttribute != null)
+            .Where(p => p.LnType == eLnType.XCBR && p.Fc == FunctionalConstraint.ST && p.ValueAttribute != null)
             .GroupBy(p => p.LogicalNode);
 
         foreach (var g in groups)
         {
-            var point = g.Single();
-            var breaker = new XCBR(g.Key, point.Reference, point.EquipmentName, registry);
+            var posPoint = g.Where(p => p.DataObject == "Pos").Single(); // throws on duplicates
+
+            var breaker = new XCBR(g.Key, posPoint.Reference, posPoint.EquipmentName, registry,
+                locRef: g.FirstOrDefault(p => p.DataObject == "Loc")?.Reference,
+                blkOpnRef: g.FirstOrDefault(p => p.DataObject == "BlkOpn")?.Reference,
+                blkClsRef: g.FirstOrDefault(p => p.DataObject == "BlkCls")?.Reference,
+                opCntRef: g.FirstOrDefault(p => p.DataObject == "OpCnt")?.Reference,
+                cbOpCapRef: g.FirstOrDefault(p => p.DataObject == "CBOpCap")?.Reference);
+
             manager.Register(breaker);
         }
     }
@@ -97,7 +103,13 @@ public class DeviceBuilder
             if (breaker == null)
                 continue;
 
-            var cswi = new CSWI(g.Key, cmdPoint.Reference, posPoint.Reference, breaker, registry);
+            var stPoints = g.Where(p => p.Fc == FunctionalConstraint.ST && p.ValueAttribute != null).ToList();
+
+            var cswi = new CSWI(g.Key, cmdPoint.Reference, posPoint.Reference, breaker, registry,
+                locRef: stPoints.FirstOrDefault(p => p.DataObject == "Loc")?.Reference,
+                opCntRsRef: stPoints.FirstOrDefault(p => p.DataObject == "OpCntRs")?.Reference,
+                opOpnRef: stPoints.FirstOrDefault(p => p.DataObject == "OpOpn")?.Reference,
+                opClsRef: stPoints.FirstOrDefault(p => p.DataObject == "OpCls")?.Reference);
             manager.RegisterController(cswi);
         }
     }
