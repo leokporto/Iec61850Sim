@@ -9,7 +9,7 @@ namespace Iec61850Sim.Core.Device;
 /// Initializes its registry values once from the model's current attribute values,
 /// falling back to hardcoded defaults when the model value is a type default.
 /// </summary>
-public class LLN0Device : DeviceBase
+public class LLN0 : DeviceBase
 {
     private static readonly Dictionary<string, object> Defaults = new()
     {
@@ -25,7 +25,7 @@ public class LLN0Device : DeviceBase
     private readonly IReadOnlyList<string> _pointRefs;
     private readonly PointRegistry _registry;
 
-    public LLN0Device(string logicalDevice, IReadOnlyList<string> pointRefs, PointRegistry registry)
+    public LLN0(string logicalDevice, IReadOnlyList<string> pointRefs, PointRegistry registry)
         : base($"LLN0_{logicalDevice}")
     {
         _pointRefs = pointRefs;

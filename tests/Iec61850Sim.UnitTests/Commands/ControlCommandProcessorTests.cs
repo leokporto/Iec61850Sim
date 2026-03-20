@@ -80,7 +80,7 @@ public class ControlCommandProcessorTests
         Assert.Equal(2, registry.GetValue<object>(CswiPosRef).Value);
     }
 
-    private static (ControlCommandProcessor sut, Cswi controller, PointRegistry registry) CreateController()
+    private static (ControlCommandProcessor sut, CSWI controller, PointRegistry registry) CreateController()
     {
         var registry = new PointRegistry();
 
@@ -97,8 +97,8 @@ public class ControlCommandProcessorTests
             CswiPosRef, "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.ST);
         registry.Register(cswiPosPoint);
 
-        var breaker = new Breaker("XCBR1", BreakerPosRef, "Q01", registry);
-        var cswi = new Cswi("CSWI1", CswiCmdRef, CswiPosRef, breaker, registry);
+        var breaker = new XCBR("XCBR1", BreakerPosRef, "Q01", registry);
+        var cswi = new CSWI("CSWI1", CswiCmdRef, CswiPosRef, breaker, registry);
         var sut = new ControlCommandProcessor(registry);
 
 

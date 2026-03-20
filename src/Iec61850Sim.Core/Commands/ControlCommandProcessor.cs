@@ -16,7 +16,7 @@ public class ControlCommandProcessor
         _registry = registry;
     }
 
-    public void Operate(Cswi controller, MmsValue ctlVal, bool test)
+    public void Operate(CSWI controller, MmsValue ctlVal, bool test)
     {
         eDblPos pos;
 
@@ -28,15 +28,15 @@ public class ControlCommandProcessor
         ApplyPosition(controller, pos);
     }
 
-    public void Operate(Cswi controller, bool isSelected)
+    public void Operate(CSWI controller, bool isSelected)
     {
         var pos = isSelected ? eDblPos.On : eDblPos.Off;
         ApplyPosition(controller, pos);
     }
 
-    private void ApplyPosition(Cswi controller, eDblPos pos)
+    private void ApplyPosition(CSWI controller, eDblPos pos)
     {
-        var breaker = controller.Breaker;
+        var breaker = controller.Xcbr;
 
         switch (pos)
         {

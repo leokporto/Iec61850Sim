@@ -181,13 +181,13 @@ public class IecServerHost
 
     private ControlHandlerResult ControlHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test)
     {
-        var controller = (Cswi)parameter;
+        var controller = (CSWI)parameter;
 
         _commandProcessor.Operate(controller, ctlVal, test);
 
         // Publica imediatamente o stVal do CSWI e do XCBR para o SCADA
         // receber o feedback antes (ou junto) ao CommandTermination
-        PublishByReferences([controller.PositionReference, controller.Breaker.PositionReference]);
+        PublishByReferences([controller.PositionReference, controller.Xcbr.PositionReference]);
 
         return ControlHandlerResult.OK;
     }
@@ -196,7 +196,7 @@ public class IecServerHost
     {
         // Para SBO (ctlModel=4): o ctlVal não é acessível via ControlAction no SelectStateChanged,
         // então é capturado aqui.
-        if (ctlVal != null && parameter is Cswi ctrl)
+        if (ctlVal != null && parameter is CSWI ctrl)
             _pendingSelectCtlVals[ctrl.Name] = ctlVal;
 
         return CheckHandlerResult.ACCEPTED;
@@ -204,7 +204,7 @@ public class IecServerHost
 
     private void SelectStateChanged(ControlAction action, object parameter, bool isSelected, SelectStateChangedReason reason)
     {
-        var controller = (Cswi)parameter;
+        var controller = (CSWI)parameter;
         Console.WriteLine($"[CSWI] {controller.Name} select state: isSelected={isSelected}, reason={reason}");
 
         if (!isSelected || reason != SelectStateChangedReason.SELECT_STATE_REASON_SELECTED)
@@ -218,6 +218,6 @@ public class IecServerHost
 
         // SBO (ctlModel=4): aplica o comando com o ctlVal do SelectWithValue
         _commandProcessor.Operate(controller, ctlVal, test: false);
-        PublishByReferences([controller.PositionReference, controller.Breaker.PositionReference]);
+        PublishByReferences([controller.PositionReference, controller.Xcbr.PositionReference]);
     }
 }

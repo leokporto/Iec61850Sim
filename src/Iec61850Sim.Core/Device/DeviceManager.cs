@@ -6,15 +6,15 @@ public class DeviceManager
 
     public IReadOnlyList<DeviceBase> Devices => devices;
 
-    public List<Breaker> Breakers { get; } = new();
+    public List<XCBR> Breakers { get; } = new();
 
-    public List<Cswi> Controllers { get; } = new();
+    public List<CSWI> Controllers { get; } = new();
 
     public List<MeasurementDevice> Measurements { get; } = new();
 
-    public List<LLN0Device> LLN0Devices { get; } = new();
+    public List<LLN0> LLN0Devices { get; } = new();
 
-    public List<LPHDDevice> LPHDDevices { get; } = new();
+    public List<LPHD> LPHDDevices { get; } = new();
 
     public void Register(DeviceBase device)
     {
@@ -22,7 +22,7 @@ public class DeviceManager
 
         switch (device)
         {
-            case Breaker b:
+            case XCBR b:
                 Breakers.Add(b);
                 break;
 
@@ -30,17 +30,17 @@ public class DeviceManager
                 Measurements.Add(m);
                 break;
 
-            case LLN0Device lln0:
+            case LLN0 lln0:
                 LLN0Devices.Add(lln0);
                 break;
 
-            case LPHDDevice lphd:
+            case LPHD lphd:
                 LPHDDevices.Add(lphd);
                 break;
         }
     }
 
-    public void RegisterController(Cswi cswi)
+    public void RegisterController(CSWI cswi)
     {
         Controllers.Add(cswi);
     }

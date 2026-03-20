@@ -8,13 +8,13 @@ using Xunit;
 
 namespace Iec61850Sim.UnitTests.Device;
 
-public class LPHDDeviceTests
+public class LphdTests
 {
     [Fact]
     public void Initialize_WithEmptyStringCfgValue_ShouldApplyDefaultVendor()
     {
         var (registry, _) = CreateStringPoint("LD/LPHD1.PhyNam.vendor", "PhyNam");
-        var device = new LPHDDevice("LD", ["LD/LPHD1.PhyNam.vendor"], registry);
+        var device = new LPHD("LD", ["LD/LPHD1.PhyNam.vendor"], registry);
 
         device.Initialize(_ => null);
 
@@ -25,7 +25,7 @@ public class LPHDDeviceTests
     public void Initialize_WithNonEmptyStringCfgValue_ShouldPreserveCfgValue()
     {
         var (registry, _) = CreateStringPoint("LD/LPHD1.PhyNam.vendor", "PhyNam");
-        var device = new LPHDDevice("LD", ["LD/LPHD1.PhyNam.vendor"], registry);
+        var device = new LPHD("LD", ["LD/LPHD1.PhyNam.vendor"], registry);
 
         device.Initialize(_ => "AcmeCorp");
 
@@ -36,7 +36,7 @@ public class LPHDDeviceTests
     public void Initialize_WithZeroIntCfgValue_ShouldApplyDefaultPhyHealthStVal()
     {
         var (registry, _) = CreateIntPoint("LD/LPHD1.PhyHealth.stVal", "PhyHealth");
-        var device = new LPHDDevice("LD", ["LD/LPHD1.PhyHealth.stVal"], registry);
+        var device = new LPHD("LD", ["LD/LPHD1.PhyHealth.stVal"], registry);
 
         device.Initialize(_ => 0);
 
@@ -47,7 +47,7 @@ public class LPHDDeviceTests
     public void Initialize_WithFalseBoolCfgValue_ShouldApplyDefaultProxyStVal()
     {
         var (registry, _) = CreateBoolPoint("LD/LPHD1.Proxy.stVal", "Proxy");
-        var device = new LPHDDevice("LD", ["LD/LPHD1.Proxy.stVal"], registry);
+        var device = new LPHD("LD", ["LD/LPHD1.Proxy.stVal"], registry);
 
         device.Initialize(_ => false);
 
@@ -60,7 +60,7 @@ public class LPHDDeviceTests
     {
         var (registry, _) = CreateIntPoint("LD/LPHD1.PhyHealth.stVal", "PhyHealth");
         registry.SetValue(new PointValue<object> { Reference = "LD/LPHD1.PhyHealth.stVal", Value = 1, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
-        var device = new LPHDDevice("LD", ["LD/LPHD1.PhyHealth.stVal"], registry);
+        var device = new LPHD("LD", ["LD/LPHD1.PhyHealth.stVal"], registry);
 
         device.Step(0.1);
 

@@ -17,7 +17,7 @@ public class DeviceManagerTests
         registry.Register(DevicePointFactory.CreatePoint("LD0/XCBR1.Pos.stVal", "XCBR1", "Pos", eLnType.XCBR, FunctionalConstraint.ST));
 
         var manager = new DeviceManager();
-        var breaker = new Breaker("XCBR1", "LD0/XCBR1.Pos.stVal", "Q01", registry);
+        var breaker = new XCBR("XCBR1", "LD0/XCBR1.Pos.stVal", "Q01", registry);
 
         manager.Register(breaker);
 
@@ -51,8 +51,8 @@ public class DeviceManagerTests
         registry.Register(DevicePointFactory.CreatePoint("LD0/CSWI1.Pos.stVal", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.ST));
 
         var manager = new DeviceManager();
-        var breaker = new Breaker("XCBR1", "LD0/XCBR1.Pos.stVal", "Q01", registry);
-        var cswi = new Cswi("CSWI1", "LD0/CSWI1.Pos.Oper.ctlVal", "LD0/CSWI1.Pos.stVal", breaker, registry);
+        var breaker = new XCBR("XCBR1", "LD0/XCBR1.Pos.stVal", "Q01", registry);
+        var cswi = new CSWI("CSWI1", "LD0/CSWI1.Pos.Oper.ctlVal", "LD0/CSWI1.Pos.stVal", breaker, registry);
 
         manager.RegisterController(cswi);
 

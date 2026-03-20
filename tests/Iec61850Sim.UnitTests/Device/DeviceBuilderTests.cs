@@ -124,7 +124,7 @@ public class DeviceBuilderTests
         // Assert
         Assert.Single(manager.Breakers);
         Assert.Single(manager.Controllers);
-        Assert.Same(manager.Breakers[0], manager.Controllers[0].Breaker);
+        Assert.Same(manager.Breakers[0], manager.Controllers[0].Xcbr);
         Assert.Equal("LD0/CSWI1.Pos.Oper.ctlVal", manager.Controllers[0].CommandReference);
         Assert.Equal("LD0/CSWI1.Pos.stVal", manager.Controllers[0].PositionReference);
     }

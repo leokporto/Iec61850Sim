@@ -37,6 +37,6 @@ public class MeasurementDevice : DeviceBase
 
         _registry.SetValues(updates);
 
-        Console.WriteLine($"MeasurementDevice '{Name}' updated {_references.Count} points at time {t:F2}s");
+        //Console.WriteLine($"MeasurementDevice '{Name}' updated {_references.Count} points at time {t:F2}s");
     }
 }

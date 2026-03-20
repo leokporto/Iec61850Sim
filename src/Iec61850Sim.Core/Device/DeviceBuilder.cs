@@ -25,7 +25,7 @@ public class DeviceBuilder
         foreach (var g in groups)
         {
             var point = g.Single();
-            var breaker = new Breaker(g.Key, point.Reference, point.EquipmentName, registry);
+            var breaker = new XCBR(g.Key, point.Reference, point.EquipmentName, registry);
             manager.Register(breaker);
         }
     }
@@ -55,7 +55,7 @@ public class DeviceBuilder
         foreach (var g in groups)
         {
             var refs = g.Select(p => p.Reference).ToList();
-            manager.Register(new LLN0Device(g.Key, refs, registry));
+            manager.Register(new LLN0(g.Key, refs, registry));
         }
     }
 
@@ -68,7 +68,7 @@ public class DeviceBuilder
         foreach (var g in groups)
         {
             var refs = g.Select(p => p.Reference).ToList();
-            manager.Register(new LPHDDevice(g.Key, refs, registry));
+            manager.Register(new LPHD(g.Key, refs, registry));
         }
     }
 
@@ -97,7 +97,7 @@ public class DeviceBuilder
             if (breaker == null)
                 continue;
 
-            var cswi = new Cswi(g.Key, cmdPoint.Reference, posPoint.Reference, breaker, registry);
+            var cswi = new CSWI(g.Key, cmdPoint.Reference, posPoint.Reference, breaker, registry);
             manager.RegisterController(cswi);
         }
     }

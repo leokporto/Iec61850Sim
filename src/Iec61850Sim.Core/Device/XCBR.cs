@@ -3,14 +3,14 @@ using Iec61850Sim.Core.Points;
 
 namespace Iec61850Sim.Core.Device;
 
-public class Breaker : DeviceBase
+public class XCBR : DeviceBase
 {
     private readonly IPointRegistry _registry;
 
     public string PositionReference { get; }
     public string EquipmentName { get; }
 
-    public Breaker(string name, string positionReference, string equipmentName, IPointRegistry registry)
+    public XCBR(string name, string positionReference, string equipmentName, IPointRegistry registry)
         : base(name)
     {
         PositionReference = positionReference;

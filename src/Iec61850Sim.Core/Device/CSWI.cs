@@ -6,21 +6,21 @@ namespace Iec61850Sim.Core.Device;
 /// Switch controller (CSWI on IEC61850).
 /// Responsible for commands; delegates physical switching to the associated Breaker (XCBR).
 /// </summary>
-public class Cswi : DeviceBase
+public class CSWI : DeviceBase
 {
     private readonly IPointRegistry _registry;
 
-    public Cswi(string name, string commandReference, string positionReference, Breaker breaker, IPointRegistry registry)
+    public CSWI(string name, string commandReference, string positionReference, XCBR xcbr, IPointRegistry registry)
         : base(name)
     {
         CommandReference = commandReference;
         PositionReference = positionReference;
-        Breaker = breaker;
+        Xcbr = xcbr;
         _registry = registry;
     }
 
     /// <summary>The breaker (XCBR) controlled by this CSWI.</summary>
-    public Breaker Breaker { get; private set; }
+    public XCBR Xcbr { get; private set; }
 
     /// <summary>Reference of the CO point used to receive commands (CSWI.Pos.Oper.ctlVal).</summary>
     public string CommandReference { get; }
@@ -28,12 +28,12 @@ public class Cswi : DeviceBase
     /// <summary>Reference of the ST point mirroring the breaker position (CSWI.Pos.stVal).</summary>
     public string PositionReference { get; }
 
-    public void BindBreaker(Breaker breaker) => Breaker = breaker;
+    public void BindBreaker(XCBR xcbr) => Xcbr = xcbr;
 
     public void Operate(bool close)
     {
-        if (close) Breaker.Close();
-        else Breaker.Open();
+        if (close) Xcbr.Close();
+        else Xcbr.Open();
     }
 
     public override void Step(double dt) { }

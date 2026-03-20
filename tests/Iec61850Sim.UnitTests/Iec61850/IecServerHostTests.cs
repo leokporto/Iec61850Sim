@@ -128,8 +128,8 @@ public class IecServerHostTests
             context.Registry.Register(cmdPoint);
             context.Registry.SetValue(new PointValue<object> { Reference = breakerRef, Value = 1, Timestamp = DateTimeOffset.UtcNow, Quality = 192 });
 
-            var breaker = new Breaker("XCBR1", breakerRef, "Q01", context.Registry);
-            var controller = new Cswi("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
+            var breaker = new XCBR("XCBR1", breakerRef, "Q01", context.Registry);
+            var controller = new CSWI("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
 
             var method = typeof(IecServerHost).GetMethod("ControlHandler", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(method);
@@ -182,8 +182,8 @@ public class IecServerHostTests
             context.Registry.Register(controllerPos);
             context.Registry.Register(cmdPoint);
 
-            var breaker = new Breaker("XCBR1", breakerRef, "Q01", context.Registry);
-            var controller = new Cswi("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
+            var breaker = new XCBR("XCBR1", breakerRef, "Q01", context.Registry);
+            var controller = new CSWI("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
 
             var method = typeof(IecServerHost).GetMethod("SelectStateChanged", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(method);
@@ -217,8 +217,8 @@ public class IecServerHostTests
             context.Registry.Register(cmdPoint);
             context.Registry.SetValue(new PointValue<object> { Reference = breakerRef, Value = (int)eDblPos.Off, Timestamp = DateTimeOffset.UtcNow, Quality = 192 });
 
-            var breaker = new Breaker("XCBR1", breakerRef, "Q01", context.Registry);
-            var controller = new Cswi("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
+            var breaker = new XCBR("XCBR1", breakerRef, "Q01", context.Registry);
+            var controller = new CSWI("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
 
             var selectMethod = typeof(IecServerHost).GetMethod("SelectStateChanged", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(selectMethod);

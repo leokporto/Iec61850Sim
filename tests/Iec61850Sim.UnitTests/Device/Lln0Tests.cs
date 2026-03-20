@@ -8,13 +8,13 @@ using Xunit;
 
 namespace Iec61850Sim.UnitTests.Device;
 
-public class LLN0DeviceTests
+public class Lln0Tests
 {
     [Fact]
     public void Initialize_WithEmptyStringCfgValue_ShouldApplyDefaultVendor()
     {
         var (registry, vendorDa) = CreateStringPoint("LD/LLN0.NamPlt.vendor", "NamPlt");
-        var device = new LLN0Device("LD", ["LD/LLN0.NamPlt.vendor"], registry);
+        var device = new LLN0("LD", ["LD/LLN0.NamPlt.vendor"], registry);
 
         device.Initialize(_ => null);
 
@@ -25,7 +25,7 @@ public class LLN0DeviceTests
     public void Initialize_WithNonEmptyStringCfgValue_ShouldPreserveCfgValue()
     {
         var (registry, _) = CreateStringPoint("LD/LLN0.NamPlt.vendor", "NamPlt");
-        var device = new LLN0Device("LD", ["LD/LLN0.NamPlt.vendor"], registry);
+        var device = new LLN0("LD", ["LD/LLN0.NamPlt.vendor"], registry);
 
         device.Initialize(_ => "CustomVendor");
 
@@ -36,7 +36,7 @@ public class LLN0DeviceTests
     public void Initialize_WithZeroIntCfgValue_ShouldApplyDefaultStVal()
     {
         var (registry, _) = CreateIntPoint("LD/LLN0.Mod.stVal", "Mod");
-        var device = new LLN0Device("LD", ["LD/LLN0.Mod.stVal"], registry);
+        var device = new LLN0("LD", ["LD/LLN0.Mod.stVal"], registry);
 
         device.Initialize(_ => 0);
 
@@ -47,7 +47,7 @@ public class LLN0DeviceTests
     public void Initialize_WithNonZeroIntCfgValue_ShouldPreserveCfgValue()
     {
         var (registry, _) = CreateIntPoint("LD/LLN0.Mod.stVal", "Mod");
-        var device = new LLN0Device("LD", ["LD/LLN0.Mod.stVal"], registry);
+        var device = new LLN0("LD", ["LD/LLN0.Mod.stVal"], registry);
 
         device.Initialize(_ => 3);
 
@@ -59,7 +59,7 @@ public class LLN0DeviceTests
     {
         // "UnknownDO.stVal" has no entry in Defaults, cfg returns null → skip
         var (registry, _) = CreateIntPoint("LD/LLN0.UnknownDO.stVal", "UnknownDO");
-        var device = new LLN0Device("LD", ["LD/LLN0.UnknownDO.stVal"], registry);
+        var device = new LLN0("LD", ["LD/LLN0.UnknownDO.stVal"], registry);
 
         device.Initialize(_ => null);
 
@@ -71,7 +71,7 @@ public class LLN0DeviceTests
     {
         var (registry, _) = CreateIntPoint("LD/LLN0.Mod.stVal", "Mod");
         registry.SetValue(new PointValue<object> { Reference = "LD/LLN0.Mod.stVal", Value = 1, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
-        var device = new LLN0Device("LD", ["LD/LLN0.Mod.stVal"], registry);
+        var device = new LLN0("LD", ["LD/LLN0.Mod.stVal"], registry);
 
         device.Step(0.1);
 

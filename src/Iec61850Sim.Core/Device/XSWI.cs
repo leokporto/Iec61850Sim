@@ -1,10 +1,10 @@
 namespace Iec61850Sim.Core.Device;
 
-public class Switch : DeviceBase
+public class XSWI : DeviceBase
 {
     public string PositionReference { get; }
 
-    public Switch(string name, string positionReference) : base(name)
+    public XSWI(string name, string positionReference) : base(name)
     {
         PositionReference = positionReference;
     }
