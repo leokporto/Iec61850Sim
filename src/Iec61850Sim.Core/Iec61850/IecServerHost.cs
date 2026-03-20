@@ -1,10 +1,9 @@
 using IEC61850.Common;
 using IEC61850.Server;
-using Iec61850Sim.Core.Biz.Commands;
-using Iec61850Sim.Core.Biz.Device;
-using Iec61850Sim.Core.Biz.Points;
+using Iec61850Sim.Core.Commands;
+using Iec61850Sim.Core.Device;
 using Iec61850Sim.Core.Model;
-using Iec61850Sim.Core.Model.Devices;
+using Iec61850Sim.Core.Points;
 
 namespace Iec61850Sim.Core.Iec61850;
 

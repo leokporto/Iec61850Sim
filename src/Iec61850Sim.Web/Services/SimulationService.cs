@@ -1,4 +1,4 @@
-using Iec61850Sim.Core.Biz;
+using Iec61850Sim.Core;
 
 namespace Iec61850Sim.Web.Services;
 
