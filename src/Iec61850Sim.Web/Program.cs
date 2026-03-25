@@ -75,9 +75,10 @@ public class Program
         builder.Services.AddSingleton<ControlCommandProcessor>();
 
         builder.Services.AddSingleton<IecServerHost>();
-        
 
         builder.Services.AddSingleton<RuntimeEngine>();
+        builder.Services.AddSingleton<IOperationRuntime>(sp => sp.GetRequiredService<RuntimeEngine>());
+        builder.Services.AddSingleton<ManualOperationService>();
 
         builder.Services.AddSingleton<IModelNode>(sp =>
         {

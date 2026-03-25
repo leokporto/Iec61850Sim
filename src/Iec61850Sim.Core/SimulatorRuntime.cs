@@ -1,11 +1,12 @@
 using IEC61850.Server;
+using Iec61850Sim.Core.Commands;
 using Iec61850Sim.Core.Device;
 using Iec61850Sim.Core.Iec61850;
 using Iec61850Sim.Core.Simulation;
 
 namespace Iec61850Sim.Core;
 
-public class RuntimeEngine
+public class RuntimeEngine : IOperationRuntime
 {
     private readonly SimulationEngine simulation;
     private readonly IecServerHost iecHost;
@@ -46,6 +47,9 @@ public class RuntimeEngine
     {
         foreach (var xcbr in devices.Breakers)
             xcbr.Initialize(iecHost.ReadAttributeValue);
+
+        foreach (var xswi in devices.Switches)
+            xswi.Initialize(iecHost.ReadAttributeValue);
 
         foreach (var lln0 in devices.LLN0Devices)
             lln0.Initialize(iecHost.ReadAttributeValue);

@@ -1,0 +1,129 @@
+@using Iec61850Sim.Core.Commands
+@using Iec61850Sim.Core.Device
+@using Iec61850Sim.Core.Iec61850
+@using IEC61850.Common
+@implements IDisposable
+
+@inject DeviceManager DeviceManager
+@inject ManualOperationService ManualOps
+@inject PointRegistry Registry
+@inject RuntimeEngine RunEngine
+
+<MudText Typo="Typo.subtitle2" Class="mb-2 px-1">Switch Control</MudText>
+
+@if (!DeviceManager.Controllers.Any())
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary">No controllers in model.</MudText>
+}
+else
+{
+    <MudStack Spacing="2">
+        @foreach (var controller in DeviceManager.Controllers)
+        {
+            var pos = GetPosition(controller);
+            var isXswi = controller.SwitchDevice is XSWI;
+            var result = _results.GetValueOrDefault(controller.Name);
+
+            <MudPaper Elevation="0" Outlined="true" Class="pa-2">
+                <MudStack Spacing="1">
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@(isXswi ? Icons.Material.Filled.LinearScale : Icons.Material.Filled.OfflineBolt)"
+                                 Size="Size.Small" Color="Color.Default" />
+                        <MudText Typo="Typo.body2"><b>@controller.Name</b></MudText>
+                        <MudSpacer />
+                        <MudChip T="string" Size="Size.Small" Color="@PosColor(pos)" Variant="Variant.Filled">
+                            @FormatPos(pos)
+                        </MudChip>
+                    </MudStack>
+
+                    <MudStack Row="true" Spacing="1">
+                        <MudButton Size="Size.Small"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Warning"
+                                   Disabled="@(pos == eDblPos.Off)"
+                                   OnClick="@(() => Operate(controller, isClose: false))">
+                            Open
+                        </MudButton>
+                        <MudButton Size="Size.Small"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Disabled="@(pos == eDblPos.On)"
+                                   OnClick="@(() => Operate(controller, isClose: true))">
+                            Close
+                        </MudButton>
+                    </MudStack>
+
+                    @if (result is not null)
+                    {
+                        <MudAlert Severity="@(result.Success ? Severity.Success : Severity.Error)"
+                                  Dense="true" Class="mt-1" NoIcon="true">
+                            @result.Message
+                        </MudAlert>
+                    }
+
+                </MudStack>
+            </MudPaper>
+        }
+    </MudStack>
+}
+
+@code {
+    private readonly Dictionary<string, ManualOperateResult> _results = new();
+    private PeriodicTimer? _timer;
+    private readonly CancellationTokenSource _cts = new();
+
+    protected override void OnInitialized()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
+        _ = RefreshLoop(_cts.Token);
+    }
+
+    private async Task RefreshLoop(CancellationToken token)
+    {
+        try
+        {
+            while (await _timer!.WaitForNextTickAsync(token))
+                await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private async Task Operate(CSWI controller, bool isClose)
+    {
+        var result = ManualOps.Execute(controller, isClose);
+        _results[controller.Name] = result;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private eDblPos GetPosition(CSWI controller)
+    {
+        var val = Registry.GetValue<object>(controller.SwitchDevice.PositionReference).Value;
+        return val is int i && Enum.IsDefined(typeof(eDblPos), i) ? (eDblPos)i : eDblPos.Intermediate;
+    }
+
+    private static string FormatPos(eDblPos pos) => pos switch
+    {
+        eDblPos.Off          => "Open",
+        eDblPos.On           => "Closed",
+        eDblPos.Intermediate => "Moving…",
+        eDblPos.BadState     => "Bad State",
+        _                    => pos.ToString()
+    };
+
+    private static Color PosColor(eDblPos pos) => pos switch
+    {
+        eDblPos.Off          => Color.Default,
+        eDblPos.On           => Color.Success,
+        eDblPos.Intermediate => Color.Warning,
+        eDblPos.BadState     => Color.Error,
+        _                    => Color.Default
+    };
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _timer?.Dispose();
+        _cts.Dispose();
+    }
+}

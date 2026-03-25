@@ -29,12 +29,18 @@
         </MudPaper>
     </MudItem>
 
-    <MudItem xs="12" sm="9">
+    <MudItem xs="12" sm="6">
         <MudPaper Elevation="1" Class="pa-3" Style="min-height: 400px;">
             <MudText Typo="Typo.subtitle2" Class="mb-3">
                 @(_selectedNode is not null ? _selectedNode.Name : "Device Points")
             </MudText>
             <DevicePointsPanel SelectedNode="@_selectedNode" />
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" sm="3">
+        <MudPaper Elevation="1" Class="pa-2" Style="min-height: 400px; position: sticky; top: 72px;">
+            <SwitchControlPanel />
         </MudPaper>
     </MudItem>
 

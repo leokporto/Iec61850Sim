@@ -228,8 +228,8 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 - [x] Add LLN0 LN support
 - [x] Add LPHD LN support
 - [x] Add XCBR and CSWI support
-- [ ] Add CILO LN support
-- [ ] Add XSWI LN support
+- [x] Add CILO LN support
+- [x] Add XSWI LN support
 - [ ] Add COMTRADE support
 - [ ] Add FC Filter over devices point panel
 - [x] Basic Simulation UI with model tree viewer
