@@ -1,3 +1,4 @@
+using IEC61850.Common;
 using IEC61850.Server;
 using Iec61850Sim.Core.Model;
 using Iec61850Sim.Core.Points;
@@ -83,10 +84,16 @@ public class XCBR : DeviceBase
         }
     }
 
-    public void Open()
+    /// <summary>
+    /// Opens the breaker. Returns null on success, or the blocking <see cref="ControlAddCause"/> on failure.
+    /// </summary>
+    public ControlAddCause? Open()
     {
-        if (IsLockedForOpen())
-            return;
+        if (_locRef != null && _registry.GetValue<object>(_locRef).Value is true)
+            return ControlAddCause.ADD_CAUSE_BLOCKED_BY_SWITCHING_HIERARCHY;
+
+        if (_blkOpnRef != null && _registry.GetValue<object>(_blkOpnRef).Value is true)
+            return ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING;
 
         _registry.SetValue(new PointValue<object>
         {
@@ -97,12 +104,19 @@ public class XCBR : DeviceBase
         });
 
         IncrementOpCnt();
+        return null;
     }
 
-    public void Close()
+    /// <summary>
+    /// Closes the breaker. Returns null on success, or the blocking <see cref="ControlAddCause"/> on failure.
+    /// </summary>
+    public ControlAddCause? Close()
     {
-        if (IsLockedForClose())
-            return;
+        if (_locRef != null && _registry.GetValue<object>(_locRef).Value is true)
+            return ControlAddCause.ADD_CAUSE_BLOCKED_BY_SWITCHING_HIERARCHY;
+
+        if (_blkClsRef != null && _registry.GetValue<object>(_blkClsRef).Value is true)
+            return ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING;
 
         _registry.SetValue(new PointValue<object>
         {
@@ -113,31 +127,10 @@ public class XCBR : DeviceBase
         });
 
         IncrementOpCnt();
+        return null;
     }
 
     public override void Step(double dt) { }
-
-    private bool IsLockedForOpen()
-    {
-        if (_locRef != null && _registry.GetValue<object>(_locRef).Value is true)
-            return true;
-
-        if (_blkOpnRef != null && _registry.GetValue<object>(_blkOpnRef).Value is true)
-            return true;
-
-        return false;
-    }
-
-    private bool IsLockedForClose()
-    {
-        if (_locRef != null && _registry.GetValue<object>(_locRef).Value is true)
-            return true;
-
-        if (_blkClsRef != null && _registry.GetValue<object>(_blkClsRef).Value is true)
-            return true;
-
-        return false;
-    }
 
     private void IncrementOpCnt()
     {

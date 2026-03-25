@@ -1,4 +1,5 @@
 using IEC61850.Common;
+using IEC61850.Server;
 using Iec61850Sim.Core.Commands;
 using Iec61850Sim.Core.Device;
 using Iec61850Sim.Core.Iec61850;
@@ -21,8 +22,9 @@ public class ControlCommandProcessorTests
         var (sut, controller, registry) = CreateController();
         var before = DateTimeOffset.UtcNow.AddSeconds(-1);
 
-        sut.Operate(controller, new MmsValue(true), test: false);
+        var result = sut.Operate(controller, new MmsValue(true), test: false);
 
+        Assert.True(result.Success);
         var brkVal = registry.GetValue<object>(BreakerPosRef);
         var cswiVal = registry.GetValue<object>(CswiPosRef);
         Assert.Equal(2, brkVal.Value);
@@ -89,8 +91,10 @@ public class ControlCommandProcessorTests
         registry.SetValue(new PointValue<object> { Reference = CswiLocRef, Value = true, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
         registry.SetValue(new PointValue<object> { Reference = BreakerPosRef, Value = 1, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
 
-        sut.Operate(controller, new MmsValue(true), test: false);
+        var result = sut.Operate(controller, new MmsValue(true), test: false);
 
+        Assert.False(result.Success);
+        Assert.Equal(ControlAddCause.ADD_CAUSE_BLOCKED_BY_SWITCHING_HIERARCHY, result.Cause);
         Assert.Equal(1, registry.GetValue<object>(BreakerPosRef).Value);
     }
 
@@ -151,8 +155,64 @@ public class ControlCommandProcessorTests
         Assert.Equal(5, registry.GetValue<object>(CswiOpCntRsRef).Value);
     }
 
+    // ── Position-reached ──────────────────────────────────────────────────
+
+    [Fact]
+    public void Operate_WhenBreakerAlreadyOpen_ShouldReturnPositionReached()
+    {
+        var (sut, controller, registry) = CreateController();
+        registry.SetValue(new PointValue<object> { Reference = BreakerPosRef, Value = 1, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        var result = sut.Operate(controller, new MmsValue(false), test: false); // Open command
+
+        Assert.False(result.Success);
+        Assert.Equal(ControlAddCause.ADD_CAUSE_POSITION_REACHED, result.Cause);
+        Assert.Equal(1, registry.GetValue<object>(BreakerPosRef).Value);
+    }
+
+    [Fact]
+    public void Operate_WhenBreakerAlreadyClosed_ShouldReturnPositionReached()
+    {
+        var (sut, controller, registry) = CreateController();
+        registry.SetValue(new PointValue<object> { Reference = BreakerPosRef, Value = 2, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        var result = sut.Operate(controller, new MmsValue(true), test: false); // Close command
+
+        Assert.False(result.Success);
+        Assert.Equal(ControlAddCause.ADD_CAUSE_POSITION_REACHED, result.Cause);
+        Assert.Equal(2, registry.GetValue<object>(BreakerPosRef).Value);
+    }
+
+    // ── XCBR blocking ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void Operate_WhenXcbrBlkOpnIsTrue_ShouldReturnBlockedByInterlocking()
+    {
+        var (sut, controller, registry) = CreateControllerWithXcbrBlocking();
+        registry.SetValue(new PointValue<object> { Reference = XcbrBlkOpnRef, Value = true, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        var result = sut.Operate(controller, new MmsValue(false), test: false); // Open command
+
+        Assert.False(result.Success);
+        Assert.Equal(ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING, result.Cause);
+    }
+
+    [Fact]
+    public void Operate_WhenXcbrBlkClsIsTrue_ShouldReturnBlockedByInterlocking()
+    {
+        var (sut, controller, registry) = CreateControllerWithXcbrBlocking();
+        registry.SetValue(new PointValue<object> { Reference = XcbrBlkClsRef, Value = true, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        var result = sut.Operate(controller, new MmsValue(true), test: false); // Close command
+
+        Assert.False(result.Success);
+        Assert.Equal(ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING, result.Cause);
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────
 
+    private const string XcbrBlkOpnRef = "LD0/XCBR1.BlkOpn.stVal";
+    private const string XcbrBlkClsRef = "LD0/XCBR1.BlkCls.stVal";
     private const string CswiLocRef = "LD0/CSWI1.Loc.stVal";
     private const string CswiOpCntRsRef = "LD0/CSWI1.OpCntRs.stVal";
     private const string CswiOpOpnRef = "LD0/CSWI1.OpOpn.stVal";
@@ -192,6 +252,22 @@ public class ControlCommandProcessorTests
         var cswiWithLoc = new CSWI(cswi.Name, cswi.CommandReference, cswi.PositionReference, cswi.Xcbr, registry, locRef: CswiLocRef);
 
         return (sut, cswiWithLoc, registry);
+    }
+
+    private static (ControlCommandProcessor sut, CSWI controller, PointRegistry registry) CreateControllerWithXcbrBlocking()
+    {
+        var (sut, _, registry) = CreateController();
+
+        registry.Register(DevicePointFactory.CreatePoint(XcbrBlkOpnRef, "XCBR1", "BlkOpn", eLnType.XCBR, FunctionalConstraint.ST));
+        registry.Register(DevicePointFactory.CreatePoint(XcbrBlkClsRef, "XCBR1", "BlkCls", eLnType.XCBR, FunctionalConstraint.ST));
+
+        registry.SetValue(new PointValue<object> { Reference = XcbrBlkOpnRef, Value = false, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+        registry.SetValue(new PointValue<object> { Reference = XcbrBlkClsRef, Value = false, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
+
+        var breaker = new XCBR("XCBR1", BreakerPosRef, "Q01", registry, blkOpnRef: XcbrBlkOpnRef, blkClsRef: XcbrBlkClsRef);
+        var cswi = new CSWI("CSWI1", CswiCmdRef, CswiPosRef, breaker, registry);
+
+        return (sut, cswi, registry);
     }
 
     private static (ControlCommandProcessor sut, CSWI controller, PointRegistry registry) CreateControllerWithOptionals()

@@ -25,11 +25,15 @@ public class LLN0 : DeviceBase
     private readonly IReadOnlyList<string> _pointRefs;
     private readonly PointRegistry _registry;
 
+    /// <summary>Reference to LLN0.Mod.stVal for this logical device. Null when not in model.</summary>
+    public string? ModReference { get; }
+
     public LLN0(string logicalDevice, IReadOnlyList<string> pointRefs, PointRegistry registry)
         : base($"LLN0_{logicalDevice}")
     {
         _pointRefs = pointRefs;
         _registry = registry;
+        ModReference = pointRefs.FirstOrDefault(r => r.Contains("/LLN0.Mod."));
     }
 
     /// <summary>

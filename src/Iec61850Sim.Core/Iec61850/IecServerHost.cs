@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using IEC61850.Common;
 using IEC61850.Server;
 using Iec61850Sim.Core.Commands;
@@ -14,9 +15,10 @@ public class IecServerHost
     private readonly ControlCommandProcessor _commandProcessor;
     private readonly DeviceManager _deviceManager;
 
-    // Armazena o ctlVal do SelectWithValue (SBO) — capturado no CheckHandler,
-    // consumido no SelectStateChanged após confirmação do SELECT.
-    private readonly Dictionary<string, MmsValue> _pendingSelectCtlVals = new();
+    // Task 7: ConcurrentDictionary for thread-safe access from libiec61850 callbacks.
+    // Stores the ctlVal from SelectWithValue (SBO) — captured in CheckHandler so it is
+    // available when ControlHandler fires on the subsequent Operate.
+    private readonly ConcurrentDictionary<string, MmsValue> _pendingSelectCtlVals = new();
 
     public IecServerHost(IedModel model, PointRegistry registry, DeviceManager deviceManager, ControlCommandProcessor commandProcessor)
     {
@@ -153,6 +155,7 @@ public class IecServerHost
         return null;
     }
 
+    // Task 6: Read ctlModel and register only the handlers appropriate for that model.
     private void RegisterControlHandlers()
     {
         var groups = _registry.GetByFc(FunctionalConstraint.CO)
@@ -173,51 +176,129 @@ public class IecServerHost
             if (controller == null)
                 continue;
 
+            var ctlModel = ReadCtlModel(pos);
+
             _server.SetCheckHandler(pos, CheckHandler, controller);
             _server.SetControlHandler(pos, ControlHandler, controller);
-            _server.SetSelectStateChangedHandler(pos, SelectStateChanged, controller);
+
+            if (ctlModel is ControlModel.SBO_NORMAL or ControlModel.SBO_ENHANCED)
+                _server.SetSelectStateChangedHandler(pos, SelectStateChanged, controller);
         }
     }
 
+    // Task 6: Reads the ctlModel attribute from the Pos DataObject's children.
+    // Defaults to DIRECT_NORMAL when the attribute is absent or unreadable.
+    private ControlModel ReadCtlModel(DataObject pos)
+    {
+        try
+        {
+            var children = pos.GetChildren();
+            if (children == null) return ControlModel.DIRECT_NORMAL;
+
+            foreach (ModelNode child in children)
+            {
+                if (child is DataAttribute da && da.GetName() == "ctlModel")
+                {
+                    var val = _server.GetAttributeValue(da);
+                    if (val != null && val.GetType() == MmsType.MMS_INTEGER)
+                        return (ControlModel)val.ToInt32();
+                }
+            }
+        }
+        catch { }
+
+        return ControlModel.DIRECT_NORMAL;
+    }
+
+    // Task 2: Map ControlOperateResult to ControlHandlerResult.
+    // On failure, SetAddCause so the library includes it in CommandTermination-.
     private ControlHandlerResult ControlHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test)
     {
         var controller = (CSWI)parameter;
+        var result = _commandProcessor.Operate(controller, ctlVal, test);
 
-        _commandProcessor.Operate(controller, ctlVal, test);
+        if (!result.Success)
+        {
+            TrySetAddCause(action, result.Cause);
+            return ControlHandlerResult.FAILED;
+        }
 
-        // Publica imediatamente o stVal do CSWI e do XCBR para o SCADA
-        // receber o feedback antes (ou junto) ao CommandTermination
+        // Publish stVal immediately so the SCADA receives feedback with CommandTermination+
         PublishByReferences([controller.PositionReference, controller.Xcbr.PositionReference]);
-
         return ControlHandlerResult.OK;
     }
 
+    // Task 4: Validate before the command reaches ControlHandler.
+    // Failures return HARDWARE_FAULT so the library generates a Response- with AddCause.
     private CheckHandlerResult CheckHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
     {
-        // Para SBO (ctlModel=4): o ctlVal não é acessível via ControlAction no SelectStateChanged,
-        // então é capturado aqui.
+        // Store ctlVal for SBO models — ControlAction does not expose it in ControlHandler for SBO.
         if (ctlVal != null && parameter is CSWI ctrl)
+        {
             _pendingSelectCtlVals[ctrl.Name] = ctlVal;
+
+            // Decode command direction for interlock checks
+            var pos = ctlVal.GetType() == MmsType.MMS_BOOLEAN
+                ? (ctlVal.GetBoolean() ? eDblPos.On : eDblPos.Off)
+                : (eDblPos)ctlVal.ToInt32();
+
+            // 1. Local mode — reject remote MMS commands
+            if (ctrl.LocReference != null && _registry.GetValue<object>(ctrl.LocReference).Value is true)
+            {
+                TrySetAddCause(action, ControlAddCause.ADD_CAUSE_BLOCKED_BY_SWITCHING_HIERARCHY);
+                return CheckHandlerResult.HARDWARE_FAULT;
+            }
+
+            // 2. CILO interlocking (only when the client requests interlock check)
+            if (interlockCheck && ctrl.Cilo != null)
+            {
+                if (pos == eDblPos.Off && !ctrl.Cilo.CanOpen(_registry))
+                {
+                    TrySetAddCause(action, ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING);
+                    return CheckHandlerResult.HARDWARE_FAULT;
+                }
+                if (pos == eDblPos.On && !ctrl.Cilo.CanClose(_registry))
+                {
+                    TrySetAddCause(action, ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING);
+                    return CheckHandlerResult.HARDWARE_FAULT;
+                }
+            }
+
+            // 3. Mode — reject when governing LLN0 is not in On (1) mode
+            var ld = ctrl.PositionReference.Split('/')[0];
+            var lln0 = _deviceManager.LLN0Devices.FirstOrDefault(l => l.Name == $"LLN0_{ld}");
+            if (lln0?.ModReference != null)
+            {
+                var mod = _registry.GetValue<object>(lln0.ModReference).Value;
+                if (mod is int modInt && modInt != 1)
+                {
+                    TrySetAddCause(action, ControlAddCause.ADD_CAUSE_BLOCKED_BY_MODE);
+                    return CheckHandlerResult.HARDWARE_FAULT;
+                }
+            }
+        }
 
         return CheckHandlerResult.ACCEPTED;
     }
 
+    // Task 1: SelectStateChanged must never execute a command.
+    // Execution happens exclusively in ControlHandler when the client sends Operate.
     private void SelectStateChanged(ControlAction action, object parameter, bool isSelected, SelectStateChangedReason reason)
     {
         var controller = (CSWI)parameter;
         Console.WriteLine($"[CSWI] {controller.Name} select state: isSelected={isSelected}, reason={reason}");
 
+        // Clean up pending ctlVal on any deselection event.
+        // On SELECTED: retain pending ctlVal; ControlHandler will consume it on Operate.
         if (!isSelected || reason != SelectStateChangedReason.SELECT_STATE_REASON_SELECTED)
-        {
-            _pendingSelectCtlVals.Remove(controller.Name);
-            return;
-        }
+            _pendingSelectCtlVals.TryRemove(controller.Name, out _);
+    }
 
-        if (!_pendingSelectCtlVals.TryGetValue(controller.Name, out MmsValue? ctlVal))
-            return;
-
-        // SBO (ctlModel=4): aplica o comando com o ctlVal do SelectWithValue
-        _commandProcessor.Operate(controller, ctlVal, test: false);
-        PublishByReferences([controller.PositionReference, controller.Xcbr.PositionReference]);
+    // Wraps ControlAction.SetAddCause to be safe when called from test context with an
+    // uninitialized ControlAction (no native handle). In production the action is always valid.
+    private static void TrySetAddCause(ControlAction action, ControlAddCause cause)
+    {
+        try { action.SetAddCause(cause); }
+        catch { }
     }
 }

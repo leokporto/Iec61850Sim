@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using IEC61850.Common;
@@ -198,8 +199,9 @@ public class IecServerHostTests
     }
 
     [Fact]
-    public void SelectStateChanged_AfterCheckHandlerStoresCtlVal_ShouldOperateAndPublish()
+    public void SelectStateChanged_OnSelectedReason_ShouldNotExecuteCommand()
     {
+        // Task 1: SelectStateChanged must NOT operate — command execution belongs in ControlHandler.
         var context = CreateContext();
         var host = context.Host;
         try
@@ -223,19 +225,50 @@ public class IecServerHostTests
             var selectMethod = typeof(IecServerHost).GetMethod("SelectStateChanged", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(selectMethod);
 
-            // Simulate CheckHandler having stored ctlVal for this controller
+            // Seed pending ctlVal as CheckHandler would
             var pendingField = typeof(IecServerHost).GetField("_pendingSelectCtlVals", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(pendingField);
-            var pending = (Dictionary<string, MmsValue>)pendingField!.GetValue(host)!;
-            pending[controller.Name] = new MmsValue(true); // true → Close
+            var pending = (ConcurrentDictionary<string, MmsValue>)pendingField!.GetValue(host)!;
+            pending[controller.Name] = new MmsValue(true);
 
             var action = (ControlAction)RuntimeHelpers.GetUninitializedObject(typeof(ControlAction));
-
             selectMethod!.Invoke(host, [action, controller, true, SelectStateChangedReason.SELECT_STATE_REASON_SELECTED]);
 
-            Assert.Equal((int)eDblPos.On, context.Registry.GetValue<object>(breakerRef).Value);
-            Assert.Equal((int)eDblPos.On, context.Registry.GetValue<object>(cswiPosRef).Value);
-            Assert.Equal(2u, host.Server.GetAttributeValue(context.CodedEnumAttribute).BitStringToUInt32BigEndian());
+            // Breaker must remain Off — SelectStateChanged must not operate
+            Assert.Equal((int)eDblPos.Off, context.Registry.GetValue<object>(breakerRef).Value);
+            // Pending ctlVal must still be present (will be consumed by ControlHandler on Operate)
+            Assert.True(pending.ContainsKey(controller.Name));
+        }
+        finally { host.Stop(); }
+    }
+
+    [Fact]
+    public void SelectStateChanged_OnTimeoutReason_ShouldCleanUpPendingCtlVal()
+    {
+        var context = CreateContext();
+        var host = context.Host;
+        try
+        {
+            const string breakerRef = "LD0/XCBR1.Pos.stVal";
+            const string cswiPosRef = "LD0/CSWI1.Pos.stVal";
+            const string cswiCmdRef = "LD0/CSWI1.Pos.SBOw.ctlVal";
+
+            context.Registry.Register(CreatePoint(breakerRef, "XCBR1", eLnType.XCBR, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01"));
+            context.Registry.Register(CreatePoint(cswiPosRef, "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.ST, context.CodedEnumAttribute, equipmentName: "Q01"));
+            context.Registry.Register(CreatePoint(cswiCmdRef, "CSWI1", eLnType.CSWI, "Pos", FunctionalConstraint.CO, context.BoolValueAttribute, equipmentName: "Q01"));
+
+            var breaker = new XCBR("XCBR1", breakerRef, "Q01", context.Registry);
+            var controller = new CSWI("CSWI1", cswiCmdRef, cswiPosRef, breaker, context.Registry);
+
+            var selectMethod = typeof(IecServerHost).GetMethod("SelectStateChanged", BindingFlags.Instance | BindingFlags.NonPublic);
+            var pendingField = typeof(IecServerHost).GetField("_pendingSelectCtlVals", BindingFlags.Instance | BindingFlags.NonPublic);
+            var pending = (ConcurrentDictionary<string, MmsValue>)pendingField!.GetValue(host)!;
+            pending[controller.Name] = new MmsValue(true);
+
+            var action = (ControlAction)RuntimeHelpers.GetUninitializedObject(typeof(ControlAction));
+            selectMethod!.Invoke(host, [action, controller, false, SelectStateChangedReason.SELECT_STATE_REASON_TIMEOUT]);
+
+            Assert.False(pending.ContainsKey(controller.Name));
         }
         finally { host.Stop(); }
     }

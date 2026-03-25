@@ -6,6 +6,7 @@ using Iec61850Sim.Core.Iec61850;
 using Iec61850Sim.Core.Model;
 using Iec61850Sim.Core.Points;
 using Xunit;
+// ReSharper disable ReturnValueOfPureMethodIsNotUsed
 
 namespace Iec61850Sim.UnitTests.Device;
 
@@ -122,6 +123,72 @@ public class XcbrTests
         xcbr.Open();
 
         Assert.Equal(5, registry.GetValue<object>(Refs.OpCnt).Value);
+    }
+
+    // ── Return values ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void Open_WhenNotBlocked_ShouldReturnNull()
+    {
+        var (registry, xcbr) = CreateXcbr();
+
+        var cause = xcbr.Open();
+
+        Assert.Null(cause);
+    }
+
+    [Fact]
+    public void Close_WhenNotBlocked_ShouldReturnNull()
+    {
+        var (registry, xcbr) = CreateXcbr();
+
+        var cause = xcbr.Close();
+
+        Assert.Null(cause);
+    }
+
+    [Fact]
+    public void Open_WhenLocIsTrue_ShouldReturnBlockedBySwitchingHierarchy()
+    {
+        var (registry, xcbr) = CreateXcbr();
+        SetValue(registry, Refs.Loc, true);
+
+        var cause = xcbr.Open();
+
+        Assert.Equal(ControlAddCause.ADD_CAUSE_BLOCKED_BY_SWITCHING_HIERARCHY, cause);
+    }
+
+    [Fact]
+    public void Open_WhenBlkOpnIsTrue_ShouldReturnBlockedByInterlocking()
+    {
+        var (registry, xcbr) = CreateXcbr();
+        SetValue(registry, Refs.BlkOpn, true);
+
+        var cause = xcbr.Open();
+
+        Assert.Equal(ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING, cause);
+    }
+
+    [Fact]
+    public void Close_WhenLocIsTrue_ShouldReturnBlockedBySwitchingHierarchy()
+    {
+        var (registry, xcbr) = CreateXcbr();
+        SetValue(registry, Refs.Loc, true);
+
+        var cause = xcbr.Close();
+
+        Assert.Equal(ControlAddCause.ADD_CAUSE_BLOCKED_BY_SWITCHING_HIERARCHY, cause);
+    }
+
+    [Fact]
+    public void Close_WhenBlkClsIsTrue_ShouldReturnBlockedByInterlocking()
+    {
+        var (registry, xcbr) = CreateXcbr();
+        SetValue(registry, Refs.BlkCls, true);
+
+        var cause = xcbr.Close();
+
+        Assert.Equal(ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING, cause);
     }
 
     // ── Initialize defaults ───────────────────────────────────────────────

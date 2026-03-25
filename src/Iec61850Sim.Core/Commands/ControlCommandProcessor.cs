@@ -16,7 +16,7 @@ public class ControlCommandProcessor
         _registry = registry;
     }
 
-    public void Operate(CSWI controller, MmsValue ctlVal, bool test)
+    public ControlOperateResult Operate(CSWI controller, MmsValue ctlVal, bool test)
     {
         eDblPos pos;
 
@@ -25,36 +25,54 @@ public class ControlCommandProcessor
         else
             pos = (eDblPos)ctlVal.ToInt32();
 
-        ApplyPosition(controller, pos);
+        return ApplyPosition(controller, pos);
     }
 
-    public void Operate(CSWI controller, bool isSelected)
+    public ControlOperateResult Operate(CSWI controller, bool isSelected)
     {
         var pos = isSelected ? eDblPos.On : eDblPos.Off;
-        ApplyPosition(controller, pos);
+        return ApplyPosition(controller, pos);
     }
 
-    private void ApplyPosition(CSWI controller, eDblPos pos)
+    private ControlOperateResult ApplyPosition(CSWI controller, eDblPos pos)
     {
         // Reject command if CSWI is in local mode
         if (controller.LocReference != null &&
             _registry.GetValue<object>(controller.LocReference).Value is true)
-            return;
+            return ControlOperateResult.Fail(ControlAddCause.ADD_CAUSE_BLOCKED_BY_SWITCHING_HIERARCHY);
 
         var breaker = controller.Xcbr;
 
         switch (pos)
         {
             case eDblPos.Off:
-                breaker.Open();
+            {
+                // Task 3: guard against redundant open
+                if (_registry.GetValue<object>(breaker.PositionReference).Value is 1)
+                    return ControlOperateResult.Fail(ControlAddCause.ADD_CAUSE_POSITION_REACHED);
+
+                var cause = breaker.Open();
+                if (cause != null)
+                    return ControlOperateResult.Fail(cause.Value);
+
                 UpdateOpTransients(controller, isClose: false);
                 IncrementOpCntRs(controller);
                 break;
+            }
             case eDblPos.On:
-                breaker.Close();
+            {
+                // Task 3: guard against redundant close
+                if (_registry.GetValue<object>(breaker.PositionReference).Value is 2)
+                    return ControlOperateResult.Fail(ControlAddCause.ADD_CAUSE_POSITION_REACHED);
+
+                var cause = breaker.Close();
+                if (cause != null)
+                    return ControlOperateResult.Fail(cause.Value);
+
                 UpdateOpTransients(controller, isClose: true);
                 IncrementOpCntRs(controller);
                 break;
+            }
         }
 
         // Sync CSWI.Pos.stVal with current breaker value (including its timestamp)
@@ -66,6 +84,8 @@ public class ControlCommandProcessor
             Timestamp = breakerValue.Timestamp,
             Quality = breakerValue.Quality
         });
+
+        return ControlOperateResult.Ok();
     }
 
     private void UpdateOpTransients(CSWI controller, bool isClose)

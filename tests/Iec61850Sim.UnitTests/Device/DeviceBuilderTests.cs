@@ -315,6 +315,61 @@ public class DeviceBuilderTests
     }
 
     [Fact]
+    public void Build_WithCiloPoints_ShouldRegisterCilo()
+    {
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint("LD0/CILO1.EnaOpn.stVal", "Q01", "CILO1", "EnaOpn", eLnType.CILO, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CILO1.EnaCls.stVal", "Q01", "CILO1", "EnaCls", eLnType.CILO, FunctionalConstraint.ST, true));
+
+        sut.Build(registry, manager);
+
+        Assert.Single(manager.CILOs);
+        Assert.Equal("CILO1", manager.CILOs[0].Name);
+        Assert.Equal("LD0/CILO1.EnaOpn.stVal", manager.CILOs[0].EnaOpnReference);
+        Assert.Equal("LD0/CILO1.EnaCls.stVal", manager.CILOs[0].EnaClsReference);
+    }
+
+    [Fact]
+    public void Build_WithMatchingCiloAndCswi_ShouldLinkCiloToController()
+    {
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint("LD0/XCBR1.Pos.stVal", "Q01", "XCBR1", "Pos", eLnType.XCBR, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.CO, false));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.stVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CILO1.EnaOpn.stVal", "Q01", "CILO1", "EnaOpn", eLnType.CILO, FunctionalConstraint.ST, true));
+
+        sut.Build(registry, manager);
+
+        Assert.Single(manager.Controllers);
+        Assert.NotNull(manager.Controllers[0].Cilo);
+        Assert.Same(manager.CILOs[0], manager.Controllers[0].Cilo);
+    }
+
+    [Fact]
+    public void Build_WithCiloForDifferentEquipment_ShouldNotLinkCiloToController()
+    {
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint("LD0/XCBR1.Pos.stVal", "Q01", "XCBR1", "Pos", eLnType.XCBR, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.CO, false));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.stVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CILO1.EnaOpn.stVal", "Q02", "CILO1", "EnaOpn", eLnType.CILO, FunctionalConstraint.ST, true));
+
+        sut.Build(registry, manager);
+
+        Assert.Single(manager.Controllers);
+        Assert.Null(manager.Controllers[0].Cilo);
+    }
+
+    [Fact]
     public void Build_WithDuplicateXcbrStPosPointsInSameLogicalNode_ShouldThrowInvalidOperationException()
     {
         // Arrange

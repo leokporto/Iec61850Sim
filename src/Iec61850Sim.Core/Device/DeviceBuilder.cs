@@ -10,6 +10,7 @@ public class DeviceBuilder
     {
         BuildBreakers(registry, manager);
         BuildMeasurements(registry, manager);
+        BuildCilos(registry, manager);
         BuildControllers(registry, manager);
         BuildLLN0Devices(registry, manager);
         BuildLPHDDevices(registry, manager);
@@ -78,6 +79,27 @@ public class DeviceBuilder
         }
     }
 
+    private void BuildCilos(PointRegistry registry, DeviceManager manager)
+    {
+        var groups = registry.All
+            .Where(p => p.LnType == eLnType.CILO && p.ValueAttribute != null)
+            .GroupBy(p => p.LogicalNode);
+
+        foreach (var g in groups)
+        {
+            var stPoints = g.Where(p => p.Fc == FunctionalConstraint.ST).ToList();
+            var firstPoint = g.First();
+
+            var cilo = new CILO(
+                g.Key,
+                firstPoint.EquipmentName,
+                enaOpnRef: stPoints.FirstOrDefault(p => p.DataObject == "EnaOpn")?.Reference,
+                enaClsRef: stPoints.FirstOrDefault(p => p.DataObject == "EnaCls")?.Reference);
+
+            manager.RegisterCilo(cilo);
+        }
+    }
+
     private void BuildControllers(PointRegistry registry, DeviceManager manager)
     {
         var groups = registry.All
@@ -110,6 +132,12 @@ public class DeviceBuilder
                 opCntRsRef: stPoints.FirstOrDefault(p => p.DataObject == "OpCntRs")?.Reference,
                 opOpnRef: stPoints.FirstOrDefault(p => p.DataObject == "OpOpn")?.Reference,
                 opClsRef: stPoints.FirstOrDefault(p => p.DataObject == "OpCls")?.Reference);
+
+            // Link CILO by equipment name
+            var cilo = manager.CILOs.FirstOrDefault(c => c.EquipmentName.Equals(cmdPoint.EquipmentName));
+            if (cilo != null)
+                cswi.BindCilo(cilo);
+
             manager.RegisterController(cswi);
         }
     }

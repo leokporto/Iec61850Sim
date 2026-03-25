@@ -16,6 +16,8 @@ public class DeviceManager
 
     public List<LPHD> LPHDDevices { get; } = new();
 
+    public List<CILO> CILOs { get; } = new();
+
     public void Register(DeviceBase device)
     {
         devices.Add(device);
@@ -43,6 +45,12 @@ public class DeviceManager
     public void RegisterController(CSWI cswi)
     {
         Controllers.Add(cswi);
+    }
+
+    public void RegisterCilo(CILO cilo)
+    {
+        devices.Add(cilo);
+        CILOs.Add(cilo);
     }
 
     public void Step(double dt)

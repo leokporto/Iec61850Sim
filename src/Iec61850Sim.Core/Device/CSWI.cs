@@ -44,6 +44,9 @@ public class CSWI : DeviceBase
     /// <summary>The breaker (XCBR) controlled by this CSWI.</summary>
     public XCBR Xcbr { get; private set; }
 
+    /// <summary>Optional interlock (CILO) linked to this CSWI by equipment name. Null when not in model.</summary>
+    public CILO? Cilo { get; private set; }
+
     /// <summary>Reference of the CO point used to receive commands (CSWI.Pos.Oper.ctlVal).</summary>
     public string CommandReference { get; }
 
@@ -123,6 +126,8 @@ public class CSWI : DeviceBase
     }
 
     public void BindBreaker(XCBR xcbr) => Xcbr = xcbr;
+
+    public void BindCilo(CILO cilo) => Cilo = cilo;
 
     public void Operate(bool close)
     {
