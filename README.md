@@ -220,9 +220,9 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 - [x] Commands Simulation
 - [ ] Parse scl files automatically
 - [ ] Discover Ied Server model
-- [ ] Add settings page
+- [x] Add settings page (model path, server model, port — with safe restart)
 - [ ] Add available Ips page
-- [ ] Add port selection field (textbox)
+- [x] Add port selection field (available in Settings page)
 - [ ] Add reports support
 - [ ] Add datasets support
 - [x] Add LLN0 LN support

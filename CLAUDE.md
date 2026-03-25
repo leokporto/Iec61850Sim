@@ -68,8 +68,17 @@ Model traversal: `IedModel → LogicalDevice → LogicalNode → DataObject → 
 
 **Simulation loop** (in `SimulationService`): calls `simulation.Step()` then `iecServerHost.Publish()` every 1000–2000 ms. Must not block the ASP.NET pipeline.
 
+**`SimulationEngine.ReRegisterDevices()`** — clears the `SimulationClock` task list and re-registers all current devices from `DeviceManager`. Must be called after a server restart that repopulates `DeviceManager`.
+
+**`IedServerManager`** (singleton, `Iec61850Sim.Web.Services`) — orchestrates safe stop/restart of the IEC server. Exposes `RestartAsync(modelPath, serverModel, port)`. Must be singleton (not scoped) because the IEC server is application-level state shared across all Blazor circuits. Guards concurrent restarts with `volatile bool _isRestarting`.
+
+**`IecServerHost.Reinitialize(IedModel, string serverModel)`** — recreates the internal `IedServer` with a new model and re-registers control handlers. Does **not** call `Start()` — caller must invoke `RuntimeEngine.StartServer(port)` afterward.
+
+**`RuntimeEngine.StartServer(int port = 102)`** — starts the IEC server on the given port (default 102 for backward compatibility), sets `ServerRunning = true`, and initializes static device state.
+
 **PointRegistry** is the single source of truth for all device point values.
 - `Register(DevicePoint)` — adds a point (called by `ModelScanner`)
+- `Clear()` — removes all registered points (used during server restart)
 - `GetPoint(reference)` — structural lookup by full DA object reference
 - `GetValue<T>(reference)` / `SetValue<T>(PointValue<T>)` — typed single value access
 - `GetValues(refs)` / `SetValues(values)` — batch value access
@@ -82,6 +91,8 @@ Model traversal: `IedModel → LogicalDevice → LogicalNode → DataObject → 
 - `GetLivePoints(registry)` — refreshes `Value/Quality/Timestamp` from registry and returns live values
 - `DataAttributeNode` is the leaf; stores a `PointValue<object>` with `Reference`+`FC` set at build time
 - **Important:** In real IEC 61850 models, value DataAttributes (e.g., `f`) are nested inside structured DAs (`cVal → mag → f`), NOT as direct children of the DataObject. `ModelTreeBuilder.CollectLeafPoints` recurses through nested DAs to reach them — do not flatten this traversal.
+
+**Settings page** (`/settings`): MudBlazor form to change `ModelPath`, `ServerModel`, and `Port`. "Apply & Restart" calls `IedServerManager.RestartAsync()`. Note: changing `ModelPath` to a different `.cfg` requires a browser page reload to see the updated `IModelNode` tree (it is a DI singleton built at startup and not replaced on restart).
 
 **Mudblazor reference** - https://www.mudblazor.com/docs/overview
 

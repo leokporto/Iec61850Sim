@@ -116,6 +116,8 @@ Device Manager
 Simulation Engine
 IEC Server Host
 Simulation Background Service
+IED Server Manager
+Settings Page
 ```
 
 Fluxo principal da aplicação:
@@ -397,6 +399,7 @@ Fonte única de verdade (source of truth) para todos os valores de pontos do dis
 
 API principal:
 - `Register(DevicePoint)` — registra um ponto (chamado pelo ModelScanner)
+- `Clear()` — remove todos os pontos registrados (usado durante o restart do servidor)
 - `GetPoint(reference)` — busca estrutural por referência
 - `GetValue<T>(reference)` / `SetValue<T>(PointValue<T>)` — acesso tipado a valores
 - `GetValues(refs)` / `SetValues(values)` — acesso em batch
@@ -502,7 +505,38 @@ Responsabilidades:
 start server
 publish values
 expor instancia do servidor
+reinicializar servidor com novo modelo (Reinitialize)
 ```
+
+### IedServerManager
+
+Singleton (`Iec61850Sim.Web.Services`) responsável por orquestrar o ciclo de vida completo de stop/restart do servidor IEC 61850.
+
+Método principal: `RestartAsync(modelPath, serverModel, port)`
+
+Fluxo interno:
+1. `StopSimulation` + `StopServer`
+2. `PointRegistry.Clear()` + `DeviceManager.Clear()`
+3. `await Task.Delay(2000)`
+4. `ConfigFileParser.CreateModelFromConfigFile(modelPath)`
+5. `ModelScanner.Scan()` + `DeviceBuilder.Build()`
+6. `SimulationEngine.ReRegisterDevices()`
+7. `IecServerHost.Reinitialize(newModel, serverModel)`
+8. `RuntimeEngine.StartServer(port)`
+
+Deve ser singleton — o servidor IEC é estado de nível de aplicação compartilhado entre todos os circuitos Blazor.
+
+### Settings Page
+
+Rota: `/settings`
+
+Formulário MudBlazor com campos:
+- `ModelPath` — caminho do arquivo `.cfg`
+- `ServerModel` — nome do modelo reportado via SetServerIdentity
+- `Port` — porta MMS TCP (padrão: 102)
+
+Botão "Apply & Restart" chama `IedServerManager.RestartAsync()` e fica desabilitado durante o restart.
+Ícone de engrenagem (`Icons.Material.Filled.Settings`) adicionado ao `MudAppBar` do `MainLayout`.
 
 
 # 5. Regras de Governança e Testes (TDD)
@@ -582,7 +616,7 @@ Itens registrados:
 - [x] Commands Simulation
 - [ ] Parse scl files automatically
 - [ ] Discover Ied Server model
-- [ ] Add settings page
+- [x] Add settings page (model path, server model, port — with safe restart via IedServerManager)
 - [x] Better Simulation UI (model tree viewer implementado)
 - [ ] Upload Scl files
 
