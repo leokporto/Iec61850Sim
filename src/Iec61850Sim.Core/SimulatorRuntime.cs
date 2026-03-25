@@ -29,21 +29,21 @@ public class RuntimeEngine : IOperationRuntime
         this.iecHost = iecHost;
     }
 
-    public void StartServer()
+    public void StartServer(int port = 102)
     {
         if (ServerRunning)
             return;
 
-        iecHost.Start(102);
+        iecHost.Start(port);
 
         ServerRunning = true;
 
         InitializeStaticDevices();
 
-        Console.WriteLine("IEC server started");
+        Console.WriteLine($"IEC server started on port {port}");
     }
 
-    private void InitializeStaticDevices()
+    internal void InitializeStaticDevices()
     {
         foreach (var xcbr in devices.Breakers)
             xcbr.Initialize(iecHost.ReadAttributeValue);

@@ -59,6 +59,18 @@ public class DeviceManager
         CILOs.Add(cilo);
     }
 
+    public void Clear()
+    {
+        devices.Clear();
+        Breakers.Clear();
+        Controllers.Clear();
+        Measurements.Clear();
+        LLN0Devices.Clear();
+        LPHDDevices.Clear();
+        CILOs.Clear();
+        Switches.Clear();
+    }
+
     public void Step(double dt)
     {
         foreach (var d in devices)

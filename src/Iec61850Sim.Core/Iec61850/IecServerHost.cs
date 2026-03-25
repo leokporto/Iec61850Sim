@@ -10,7 +10,7 @@ namespace Iec61850Sim.Core.Iec61850;
 
 public class IecServerHost
 {
-    private readonly IedServer _server;
+    private IedServer _server;
     private readonly PointRegistry _registry;
     private readonly ControlCommandProcessor _commandProcessor;
     private readonly DeviceManager _deviceManager;
@@ -52,6 +52,23 @@ public class IecServerHost
     {
         _server.Stop();
         _server.Destroy();
+    }
+
+    /// <summary>
+    /// Recreates the internal IedServer with a new model. Does NOT start the server.
+    /// Call RuntimeEngine.StartServer(port) afterward to start on the desired port.
+    /// </summary>
+    public void Reinitialize(IedModel model, string serverModel)
+    {
+        _pendingSelectCtlVals.Clear();
+
+        var config = new IedServerConfig();
+        config.ReportBufferSize = 100000;
+
+        _server = new IedServer(model, config);
+        _server.SetServerIdentity("IEC61850-Sim", serverModel, "1.0.0");
+
+        RegisterControlHandlers();
     }
 
     // Publica todos os pontos registrados — chamado pelo ciclo do BackgroundService

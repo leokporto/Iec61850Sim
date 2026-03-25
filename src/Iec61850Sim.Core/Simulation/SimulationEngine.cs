@@ -23,6 +23,12 @@ public class SimulationEngine
         }
     }
 
+    public void ReRegisterDevices()
+    {
+        clock.Clear();
+        RegisterDevices();
+    }
+
     public void Step(double dt)
     {
         clock.Tick(dt);

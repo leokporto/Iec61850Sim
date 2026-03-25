@@ -1,0 +1,73 @@
+@page "/settings"
+@using Iec61850Sim.Web.Services
+@inject IedServerManager IedServerManager
+@inject NavigationManager NavigationManager
+
+<PageTitle>Settings</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
+    <MudText Typo="Typo.h5" GutterBottom="true">Settings</MudText>
+
+    <MudAlert Severity="Severity.Warning" Class="mb-4">
+        Changing settings will terminate the current simulation and restart the IED Server.
+    </MudAlert>
+
+    <MudStack Spacing="3">
+        <MudTextField @bind-Value="_modelPath"
+                      Label="Model Path"
+                      HelperText="Path to the .cfg model file (relative to app base or absolute)"
+                      FullWidth="true" />
+
+        <MudTextField @bind-Value="_serverModel"
+                      Label="Server Model"
+                      HelperText="IED model name reported via SetServerIdentity"
+                      FullWidth="true" />
+
+        <MudNumericField @bind-Value="_port"
+                         Label="Port"
+                         HelperText="MMS TCP port (default: 102)"
+                         Min="1" Max="65535"
+                         FullWidth="true" />
+
+        <MudStack Row="true" Spacing="2" Class="mt-2">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.RestartAlt"
+                       OnClick="ApplyRestartAsync"
+                       Disabled="@(_isRestarting || IedServerManager.IsRestarting)">
+                @(_isRestarting ? "Restarting…" : "Apply & Restart")
+            </MudButton>
+
+            <MudButton Variant="Variant.Text"
+                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                       OnClick='() => NavigationManager.NavigateTo("/")'>
+                Back
+            </MudButton>
+        </MudStack>
+    </MudStack>
+</MudContainer>
+
+@code {
+    private string _modelPath = Environment.GetEnvironmentVariable("IEC_MODEL") ?? "./Config/Demo_Ed2.cfg";
+    private string _serverModel = "Demo";
+    private int _port = 102;
+    private bool _isRestarting;
+
+    private async Task ApplyRestartAsync()
+    {
+        if (_isRestarting || IedServerManager.IsRestarting)
+            return;
+
+        _isRestarting = true;
+        StateHasChanged();
+        try
+        {
+            await IedServerManager.RestartAsync(_modelPath, _serverModel, _port);
+        }
+        finally
+        {
+            _isRestarting = false;
+            StateHasChanged();
+        }
+    }
+}

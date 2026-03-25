@@ -7,6 +7,8 @@ public class SimulationClock
     public void Register(Action<double> task)
         => tasks.Add(task);
 
+    public void Clear() => tasks.Clear();
+
     public void Tick(double dt)
     {
         foreach (var t in tasks)

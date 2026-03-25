@@ -79,6 +79,7 @@ public class Program
         builder.Services.AddSingleton<RuntimeEngine>();
         builder.Services.AddSingleton<IOperationRuntime>(sp => sp.GetRequiredService<RuntimeEngine>());
         builder.Services.AddSingleton<ManualOperationService>();
+        builder.Services.AddSingleton<IedServerManager>();
 
         builder.Services.AddSingleton<IModelNode>(sp =>
         {

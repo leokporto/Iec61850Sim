@@ -19,6 +19,8 @@ public class PointRegistry : IPointRegistry
         _points[point.Reference] = point;
     }
 
+    public void Clear() => _points.Clear();
+
     // ── Structural access ─────────────────────────────────────────────────
 
     public DevicePoint? GetPoint(string reference)
