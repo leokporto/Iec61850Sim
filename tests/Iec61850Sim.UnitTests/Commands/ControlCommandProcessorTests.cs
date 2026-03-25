@@ -249,7 +249,7 @@ public class ControlCommandProcessorTests
         registry.Register(DevicePointFactory.CreatePoint(CswiLocRef, "CSWI1", "Loc", eLnType.CSWI, FunctionalConstraint.ST));
         registry.SetValue(new PointValue<object> { Reference = CswiLocRef, Value = false, Quality = 192, Timestamp = DateTimeOffset.UtcNow });
 
-        var cswiWithLoc = new CSWI(cswi.Name, cswi.CommandReference, cswi.PositionReference, cswi.Xcbr, registry, locRef: CswiLocRef);
+        var cswiWithLoc = new CSWI(cswi.Name, cswi.CommandReference, cswi.PositionReference, cswi.SwitchDevice, registry, locRef: CswiLocRef);
 
         return (sut, cswiWithLoc, registry);
     }

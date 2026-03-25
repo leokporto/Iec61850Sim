@@ -23,7 +23,7 @@ public class CSWI : DeviceBase
         string name,
         string commandReference,
         string positionReference,
-        XCBR xcbr,
+        ISwitchingDevice switchDevice,
         IPointRegistry registry,
         string? locRef = null,
         string? opCntRsRef = null,
@@ -33,7 +33,7 @@ public class CSWI : DeviceBase
     {
         CommandReference = commandReference;
         PositionReference = positionReference;
-        Xcbr = xcbr;
+        SwitchDevice = switchDevice;
         _registry = registry;
         LocReference = locRef;
         OpCntRsReference = opCntRsRef;
@@ -41,8 +41,11 @@ public class CSWI : DeviceBase
         OpClsReference = opClsRef;
     }
 
-    /// <summary>The breaker (XCBR) controlled by this CSWI.</summary>
-    public XCBR Xcbr { get; private set; }
+    /// <summary>The physical switching device (XCBR or XSWI) controlled by this CSWI.</summary>
+    public ISwitchingDevice SwitchDevice { get; private set; }
+
+    /// <summary>Convenience accessor when the underlying device is an XCBR; null otherwise.</summary>
+    public XCBR? Xcbr => SwitchDevice as XCBR;
 
     /// <summary>Optional interlock (CILO) linked to this CSWI by equipment name. Null when not in model.</summary>
     public CILO? Cilo { get; private set; }
@@ -115,24 +118,24 @@ public class CSWI : DeviceBase
                 Timestamp = DateTimeOffset.UtcNow
             });
 
-        if (Xcbr.LocReference != null)
+        if (SwitchDevice.LocReference != null)
             _registry.SetValue(new PointValue<object>
             {
-                Reference = Xcbr.LocReference,
+                Reference = SwitchDevice.LocReference,
                 Value = value,
                 Quality = 192,
                 Timestamp = DateTimeOffset.UtcNow
             });
     }
 
-    public void BindBreaker(XCBR xcbr) => Xcbr = xcbr;
+    public void BindSwitchDevice(ISwitchingDevice device) => SwitchDevice = device;
 
     public void BindCilo(CILO cilo) => Cilo = cilo;
 
     public void Operate(bool close)
     {
-        if (close) Xcbr.Close();
-        else Xcbr.Open();
+        if (close) SwitchDevice.Close();
+        else SwitchDevice.Open();
     }
 
     public override void Step(double dt) { }

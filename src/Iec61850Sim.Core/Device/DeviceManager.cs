@@ -18,6 +18,8 @@ public class DeviceManager
 
     public List<CILO> CILOs { get; } = new();
 
+    public List<XSWI> Switches { get; } = new();
+
     public void Register(DeviceBase device)
     {
         devices.Add(device);
@@ -26,6 +28,10 @@ public class DeviceManager
         {
             case XCBR b:
                 Breakers.Add(b);
+                break;
+
+            case XSWI s:
+                Switches.Add(s);
                 break;
 
             case MeasurementDevice m:

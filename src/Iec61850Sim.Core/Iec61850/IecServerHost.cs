@@ -224,7 +224,7 @@ public class IecServerHost
         }
 
         // Publish stVal immediately so the SCADA receives feedback with CommandTermination+
-        PublishByReferences([controller.PositionReference, controller.Xcbr.PositionReference]);
+        PublishByReferences([controller.PositionReference, controller.SwitchDevice.PositionReference]);
         return ControlHandlerResult.OK;
     }
 

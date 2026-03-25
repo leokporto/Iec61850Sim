@@ -9,6 +9,7 @@ public class DeviceBuilder
     public void Build(PointRegistry registry, DeviceManager manager)
     {
         BuildBreakers(registry, manager);
+        BuildSwitches(registry, manager);
         BuildMeasurements(registry, manager);
         BuildCilos(registry, manager);
         BuildControllers(registry, manager);
@@ -34,6 +35,28 @@ public class DeviceBuilder
                 cbOpCapRef: g.FirstOrDefault(p => p.DataObject == "CBOpCap")?.Reference);
 
             manager.Register(breaker);
+        }
+    }
+
+    private void BuildSwitches(PointRegistry registry, DeviceManager manager)
+    {
+        var groups = registry.All
+            .Where(p => p.LnType == eLnType.XSWI && p.Fc == FunctionalConstraint.ST && p.ValueAttribute != null)
+            .GroupBy(p => p.LogicalNode);
+
+        foreach (var g in groups)
+        {
+            var posPoint = g.FirstOrDefault(p => p.DataObject == "Pos");
+            if (posPoint == null)
+                continue;
+
+            var xswi = new XSWI(g.Key, posPoint.Reference, posPoint.EquipmentName, registry,
+                locRef: g.FirstOrDefault(p => p.DataObject == "Loc")?.Reference,
+                blkOpnRef: g.FirstOrDefault(p => p.DataObject == "BlkOpn")?.Reference,
+                blkClsRef: g.FirstOrDefault(p => p.DataObject == "BlkCls")?.Reference,
+                swAbmRef: g.FirstOrDefault(p => p.DataObject == "SwAbm")?.Reference);
+
+            manager.Register(xswi);
         }
     }
 
@@ -119,15 +142,16 @@ public class DeviceBuilder
                 continue;
             }
 
-            var breaker = manager.Breakers
-                .FirstOrDefault(x => x.EquipmentName.Equals(cmdPoint.EquipmentName));
+            ISwitchingDevice? switchDevice =
+                (ISwitchingDevice?)manager.Breakers.FirstOrDefault(x => x.EquipmentName.Equals(cmdPoint.EquipmentName))
+                ?? (ISwitchingDevice?)manager.Switches.FirstOrDefault(x => x.EquipmentName.Equals(cmdPoint.EquipmentName));
 
-            if (breaker == null)
+            if (switchDevice == null)
                 continue;
 
             var stPoints = g.Where(p => p.Fc == FunctionalConstraint.ST && p.ValueAttribute != null).ToList();
 
-            var cswi = new CSWI(g.Key, cmdPoint.Reference, posPoint.Reference, breaker, registry,
+            var cswi = new CSWI(g.Key, cmdPoint.Reference, posPoint.Reference, switchDevice, registry,
                 locRef: stPoints.FirstOrDefault(p => p.DataObject == "Loc")?.Reference,
                 opCntRsRef: stPoints.FirstOrDefault(p => p.DataObject == "OpCntRs")?.Reference,
                 opOpnRef: stPoints.FirstOrDefault(p => p.DataObject == "OpOpn")?.Reference,

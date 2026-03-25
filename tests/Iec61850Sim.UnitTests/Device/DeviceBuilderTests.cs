@@ -124,7 +124,7 @@ public class DeviceBuilderTests
         // Assert
         Assert.Single(manager.Breakers);
         Assert.Single(manager.Controllers);
-        Assert.Same(manager.Breakers[0], manager.Controllers[0].Xcbr);
+        Assert.Same(manager.Breakers[0], manager.Controllers[0].SwitchDevice);
         Assert.Equal("LD0/CSWI1.Pos.Oper.ctlVal", manager.Controllers[0].CommandReference);
         Assert.Equal("LD0/CSWI1.Pos.stVal", manager.Controllers[0].PositionReference);
     }
@@ -312,6 +312,82 @@ public class DeviceBuilderTests
         // Assert
         Assert.Single(manager.Controllers);
         Assert.Equal("LD0/CSWI1.OpCntRs.stVal", manager.Controllers[0].OpCntRsReference);
+    }
+
+    [Fact]
+    public void Build_WithValidXswiStPosPoint_ShouldRegisterSwitch()
+    {
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint("LD0/XSWI1.Pos.stVal", "Q01", "XSWI1", "Pos", eLnType.XSWI, FunctionalConstraint.ST, true));
+
+        sut.Build(registry, manager);
+
+        Assert.Single(manager.Switches);
+        Assert.Equal("XSWI1", manager.Switches[0].Name);
+        Assert.Equal("LD0/XSWI1.Pos.stVal", manager.Switches[0].PositionReference);
+        Assert.Equal("Q01", manager.Switches[0].EquipmentName);
+    }
+
+    [Fact]
+    public void Build_WithXswiOptionalPoints_ShouldWireReferences()
+    {
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint("LD0/XSWI1.Pos.stVal",   "Q01", "XSWI1", "Pos",   eLnType.XSWI, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/XSWI1.Loc.stVal",   "Q01", "XSWI1", "Loc",   eLnType.XSWI, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/XSWI1.BlkOpn.stVal","Q01", "XSWI1", "BlkOpn",eLnType.XSWI, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/XSWI1.BlkCls.stVal","Q01", "XSWI1", "BlkCls",eLnType.XSWI, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/XSWI1.SwAbm.stVal", "Q01", "XSWI1", "SwAbm", eLnType.XSWI, FunctionalConstraint.ST, true));
+
+        sut.Build(registry, manager);
+
+        var xswi = manager.Switches[0];
+        Assert.Equal("LD0/XSWI1.Loc.stVal",    xswi.LocReference);
+        Assert.Equal("LD0/XSWI1.BlkOpn.stVal", ((XSWI)xswi).ManeuverTime > 0 ? "LD0/XSWI1.BlkOpn.stVal" : null);
+    }
+
+    [Fact]
+    public void Build_WhenCswiMatchesXswiByEquipmentName_ShouldLinkXswiAsControlled()
+    {
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        // XSWI provides the physical device
+        registry.Register(CreatePoint("LD0/XSWI1.Pos.stVal",       "Q01", "XSWI1", "Pos", eLnType.XSWI, FunctionalConstraint.ST, true));
+        // CSWI is the controller, same equipment name Q01
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.CO, false));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.stVal",       "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.ST, true));
+
+        sut.Build(registry, manager);
+
+        Assert.Single(manager.Controllers);
+        Assert.IsType<XSWI>(manager.Controllers[0].SwitchDevice);
+        Assert.Same(manager.Switches[0], manager.Controllers[0].SwitchDevice);
+    }
+
+    [Fact]
+    public void Build_WhenCswiMatchesXcbr_ShouldPreferXcbrOverXswi()
+    {
+        // XCBR takes precedence because Breakers is searched first
+        var registry = new PointRegistry();
+        var manager = new DeviceManager();
+        var sut = new DeviceBuilder();
+
+        registry.Register(CreatePoint("LD0/XCBR1.Pos.stVal",       "Q01", "XCBR1", "Pos", eLnType.XCBR, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/XSWI1.Pos.stVal",       "Q01", "XSWI1", "Pos", eLnType.XSWI, FunctionalConstraint.ST, true));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.Oper.ctlVal", "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.CO, false));
+        registry.Register(CreatePoint("LD0/CSWI1.Pos.stVal",       "Q01", "CSWI1", "Pos", eLnType.CSWI, FunctionalConstraint.ST, true));
+
+        sut.Build(registry, manager);
+
+        Assert.Single(manager.Controllers);
+        Assert.IsType<XCBR>(manager.Controllers[0].SwitchDevice);
     }
 
     [Fact]

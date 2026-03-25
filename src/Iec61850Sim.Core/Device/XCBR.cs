@@ -5,7 +5,7 @@ using Iec61850Sim.Core.Points;
 
 namespace Iec61850Sim.Core.Device;
 
-public class XCBR : DeviceBase
+public class XCBR : DeviceBase, ISwitchingDevice
 {
     private static readonly Dictionary<string, object> Defaults = new()
     {

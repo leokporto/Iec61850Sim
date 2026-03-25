@@ -41,7 +41,7 @@ public class ControlCommandProcessor
             _registry.GetValue<object>(controller.LocReference).Value is true)
             return ControlOperateResult.Fail(ControlAddCause.ADD_CAUSE_BLOCKED_BY_SWITCHING_HIERARCHY);
 
-        var breaker = controller.Xcbr;
+        var breaker = controller.SwitchDevice;
 
         switch (pos)
         {
