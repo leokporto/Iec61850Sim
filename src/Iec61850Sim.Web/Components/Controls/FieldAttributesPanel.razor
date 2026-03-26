@@ -1,0 +1,140 @@
+@using IEC61850.Common
+@using Iec61850Sim.Core.Iec61850
+@implements IDisposable
+
+@inject PointRegistry Registry
+@inject IecServerHost IecServer
+
+@if (!_fieldPoints.Any())
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary">
+        @(Node is null ? "No node selected." : "No field attributes available.")
+    </MudText>
+}
+else
+{
+    <MudStack Spacing="3">
+        @foreach (var pv in _fieldPoints)
+        {
+            var point = Registry.GetPoint(pv.Reference);
+            if (point is null) continue;
+
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudText Style="min-width:90px" Typo="Typo.body2"><b>@GetLabel(point.DataObject)</b></MudText>
+
+                @if (pv.Value is bool bVal)
+                {
+                    <MudSwitch T="bool"
+                               Value="@bVal"
+                               ValueChanged="@((v) => OnBoolChanged(pv.Reference, pv.FC, v))"
+                               Color="Color.Primary"
+                               Size="Size.Small" />
+                    <MudText Typo="Typo.caption" Color="@(bVal ? Color.Warning : Color.Success)">
+                        @GetBoolLabel(point.DataObject, bVal)
+                    </MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2">@(pv.Value?.ToString() ?? "-")</MudText>
+                }
+            </MudStack>
+        }
+    </MudStack>
+}
+
+@code {
+    private static readonly HashSet<string> FieldDos = ["Loc", "BlkOpn", "BlkCls", "SwTyp"];
+
+    [Parameter] public IModelNode? Node { get; set; }
+
+    private IReadOnlyList<PointValue<object>> _fieldPoints = [];
+    private IModelNode? _lastNode;
+    private PeriodicTimer? _timer;
+    private readonly CancellationTokenSource _cts = new();
+
+    protected override void OnInitialized()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
+        _ = RefreshLoop(_cts.Token);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_lastNode != Node)
+        {
+            _lastNode = Node;
+            _fieldPoints = LoadFieldPoints();
+        }
+    }
+
+    private async Task RefreshLoop(CancellationToken token)
+    {
+        try
+        {
+            while (await _timer!.WaitForNextTickAsync(token))
+            {
+                _fieldPoints = LoadFieldPoints();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private IReadOnlyList<PointValue<object>> LoadFieldPoints()
+    {
+        if (Node is null) return [];
+
+        return Node.GetLivePoints(Registry)
+            .Where(pv =>
+            {
+                var p = Registry.GetPoint(pv.Reference);
+                return p is not null &&
+                       FieldDos.Contains(p.DataObject) &&
+                       p.Fc == FunctionalConstraint.ST;
+            })
+            .ToList();
+    }
+
+    private void OnBoolChanged(string reference, FunctionalConstraint fc, bool newValue)
+    {
+        Registry.SetValue(new PointValue<object>
+        {
+            Reference = reference,
+            FC = fc,
+            Value = newValue,
+            Quality = 192,
+            Timestamp = DateTimeOffset.UtcNow
+        });
+
+        var point = Registry.GetPoint(reference);
+        if (point is not null)
+            IecServer.Publish([point]);
+
+        _fieldPoints = LoadFieldPoints();
+        StateHasChanged();
+    }
+
+    private static string GetLabel(string dataObject) => dataObject switch
+    {
+        "Loc"    => "Local Mode",
+        "BlkOpn" => "Block Open",
+        "BlkCls" => "Block Close",
+        "SwTyp"  => "Switch Type",
+        _        => dataObject
+    };
+
+    private static string GetBoolLabel(string dataObject, bool value) => dataObject switch
+    {
+        "Loc"    => value ? "Local" : "Remote",
+        "BlkOpn" => value ? "Blocked" : "Allowed",
+        "BlkCls" => value ? "Blocked" : "Allowed",
+        _        => value ? "True" : "False"
+    };
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _timer?.Dispose();
+        _cts.Dispose();
+    }
+}

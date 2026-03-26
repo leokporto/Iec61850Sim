@@ -1,7 +1,6 @@
 
 @using IEC61850.Common
 @using Iec61850Sim.Core.Iec61850
-@using Iec61850Sim.Core.Model
 @implements IDisposable
 @inject RuntimeEngine RunEngine
 @inject PointRegistry Registry
@@ -23,7 +22,11 @@ else if (ShowPoints(SelectedNode))
         <RowTemplate>
             <MudTd DataLabel="Reference">@context.Reference</MudTd>
             <MudTd DataLabel="FC">@context.FC</MudTd>
-            <MudTd DataLabel="Value">@FormatValue(context)</MudTd>
+            <MudTd DataLabel="Value">
+                <MudText Typo="Typo.caption" Style="font-weight: bold;">
+                    @FormatValue(context)
+                </MudText>
+            </MudTd>
             <MudTd DataLabel="Timestamp">@context.Timestamp.ToLocalTime().ToString("HH:mm:ss")</MudTd>
         </RowTemplate>
     </MudTable>
@@ -106,6 +109,7 @@ else
         {
             float f  => f.ToString("N2"),
             double d => d.ToString("N2"),
+            bool b   => b ? "True" : "False",
             int i    => i.ToString(),
             long l   => l.ToString(),
             null     => "-",
@@ -114,17 +118,26 @@ else
     }
 
     private static bool IsDoubleDigital(DevicePoint point) =>
-        point.LnType is eLnType.XCBR or eLnType.XSWI ||
-        (point.LnType == eLnType.CSWI && point.Fc == FunctionalConstraint.ST);
+        point.DataObject == "Pos" &&
+        (point.LnType is eLnType.XCBR or eLnType.XSWI ||
+        (point.LnType == eLnType.CSWI && point.Fc == FunctionalConstraint.ST));
 
-    private static string FormatDblPos(eDblPos pos) => pos switch
+    private static string FormatDblPos(eDblPos pos)
     {
-        eDblPos.Off          => "Off (Open)",
-        eDblPos.On           => "On (Closed)",
-        eDblPos.Intermediate => "Intermediate",
-        eDblPos.BadState     => "Bad State",
-        _                    => pos.ToString()
-    };
+        switch (pos)
+        {
+            case eDblPos.Off:
+                return "Off (Open)";
+            case eDblPos.On:
+                return "On (Closed)";
+            case eDblPos.Intermediate:
+                return "Intermediate";
+            case eDblPos.BadState:
+                return "Bad State";
+            default:
+                return pos.ToString();
+        }
+    }
 
     private static bool TryGetDblPos(object? value, out eDblPos state)
     {

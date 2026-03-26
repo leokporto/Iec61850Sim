@@ -11,7 +11,63 @@
 
 <MudText Typo="Typo.subtitle2" Class="mb-2 px-1">Switch Control</MudText>
 
-@if (!DeviceManager.Controllers.Any())
+@if (IsSwitchNode())
+{
+    <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="false">
+
+        @if (_selectedController is not null)
+        {
+            <MudTabPanel Text="Control">
+                @{
+                    var pos = GetPosition(_selectedController);
+                    var result = _results.GetValueOrDefault(_selectedController.Name);
+                }
+                <MudStack Spacing="2">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@(IsXswi(_selectedController) ? Icons.Material.Filled.LinearScale : Icons.Material.Filled.OfflineBolt)"
+                                 Size="Size.Small" />
+                        <MudText Typo="Typo.body2"><b>@_selectedController.Name</b></MudText>
+                        <MudSpacer />
+                        <MudChip T="string" Size="Size.Small" Color="@PosColor(pos)" Variant="Variant.Filled">
+                            @FormatPos(pos)
+                        </MudChip>
+                    </MudStack>
+
+                    <MudStack Row="true" Spacing="1">
+                        <MudButton Size="Size.Small"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Disabled="@(pos == eDblPos.Off)"
+                                   OnClick="@(() => Operate(_selectedController, isClose: false))">
+                            Open
+                        </MudButton>
+                        <MudButton Size="Size.Small"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Error"
+                                   Disabled="@(pos == eDblPos.On)"
+                                   OnClick="@(() => Operate(_selectedController, isClose: true))">
+                            Close
+                        </MudButton>
+                    </MudStack>
+
+                    @if (result is not null)
+                    {
+                        <MudAlert Severity="@(result.Success ? Severity.Success : Severity.Error)"
+                                  Dense="true" Class="mt-1" NoIcon="true">
+                            @result.Message
+                        </MudAlert>
+                    }
+                </MudStack>
+            </MudTabPanel>
+        }
+
+        <MudTabPanel Text="Field Attributes">
+            <FieldAttributesPanel Node="@SelectedNode" />
+        </MudTabPanel>
+
+    </MudTabs>
+}
+else if (!DeviceManager.Controllers.Any())
 {
     <MudText Typo="Typo.body2" Color="Color.Secondary">No controllers in model.</MudText>
 }
@@ -69,6 +125,9 @@ else
 }
 
 @code {
+    [Parameter] public IModelNode? SelectedNode { get; set; }
+
+    private CSWI? _selectedController;
     private readonly Dictionary<string, ManualOperateResult> _results = new();
     private PeriodicTimer? _timer;
     private readonly CancellationTokenSource _cts = new();
@@ -78,6 +137,19 @@ else
         _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
         _ = RefreshLoop(_cts.Token);
     }
+
+    protected override void OnParametersSet()
+    {
+        _selectedController = SelectedNode is LogicalNodeNode
+            ? DeviceManager.Controllers.FirstOrDefault(c => c.Name == SelectedNode.Name)
+            : null;
+    }
+
+    private bool IsSwitchNode() =>
+        SelectedNode is LogicalNodeNode && (
+            DeviceManager.Controllers.Any(c => c.Name == SelectedNode.Name) ||
+            DeviceManager.Breakers.Any(b => b.Name == SelectedNode.Name) ||
+            DeviceManager.Switches.Any(s => s.Name == SelectedNode.Name));
 
     private async Task RefreshLoop(CancellationToken token)
     {
@@ -102,21 +174,23 @@ else
         return val is int i && Enum.IsDefined(typeof(eDblPos), i) ? (eDblPos)i : eDblPos.Intermediate;
     }
 
+    private static bool IsXswi(CSWI controller) => controller.SwitchDevice is XSWI;
+
     private static string FormatPos(eDblPos pos) => pos switch
     {
         eDblPos.Off          => "Open",
         eDblPos.On           => "Closed",
-        eDblPos.Intermediate => "Moving…",
+        eDblPos.Intermediate => "Moving\u2026",
         eDblPos.BadState     => "Bad State",
         _                    => pos.ToString()
     };
 
     private static Color PosColor(eDblPos pos) => pos switch
     {
-        eDblPos.Off          => Color.Default,
-        eDblPos.On           => Color.Success,
-        eDblPos.Intermediate => Color.Warning,
-        eDblPos.BadState     => Color.Error,
+        eDblPos.Off          => Color.Success,
+        eDblPos.On           => Color.Error,
+        eDblPos.Intermediate => Color.Default,
+        eDblPos.BadState     => Color.Warning,
         _                    => Color.Default
     };
 
