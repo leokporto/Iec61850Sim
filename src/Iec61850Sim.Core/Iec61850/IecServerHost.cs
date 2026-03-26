@@ -14,9 +14,20 @@ public class IecServerHost
     private readonly PointRegistry _registry;
     private readonly ControlCommandProcessor _commandProcessor;
     private readonly DeviceManager _deviceManager;
+    private int _connectedClients;
+    private int _port = 102;
+    private readonly string _model = "Demo";
 
     // Task 1: RCB handle cache — populated at startup and lazily from callbacks.
     private RcbManager _rcbManager = new();
+
+    // Thread-safe connected client counter — incremented/decremented in the connection callback.
+    public int ConnectedClients => _connectedClients;
+
+    public int Port => _port;
+
+    public string ServerModel => _model;
+
 
     // Task 7: ConcurrentDictionary for thread-safe access from libiec61850 callbacks.
     // Stores the ctlVal from SelectWithValue (SBO) — captured in CheckHandler so it is
@@ -40,15 +51,15 @@ public class IecServerHost
         _rcbManager.Initialize(model, _registry);
 
         RegisterControlHandlers();
-
-        // Task 2: register the global RCB event callback.
         RegisterRcbEventHandler();
+        RegisterConnectionHandler();
     }
 
     public IedServer Server => _server;
 
     public void Start(int port = 102)
     {
+        _port = port;
         _server.Start(port);
 
         if (_server.IsRunning())
@@ -81,10 +92,11 @@ public class IecServerHost
         _rcbManager = new RcbManager();
         _rcbManager.Initialize(model, _registry);
 
-        RegisterControlHandlers();
+        _connectedClients = 0;
 
-        // Task 2: re-register the RCB event handler against the new IedServer instance.
+        RegisterControlHandlers();
         RegisterRcbEventHandler();
+        RegisterConnectionHandler();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -319,6 +331,20 @@ public class IecServerHost
     // Critical RCB attributes: changing these while RptEna=true is non-compliant per IEC 61850.
     private static bool IsCriticalRcbAttribute(string? parameterName) =>
         parameterName is "DatSet" or "TrgOps" or "OptFlds" or "IntgPd" or "BufTm" or "ConfRev";
+
+    private void RegisterConnectionHandler()
+    {
+        _server.SetConnectionIndicationHandler(OnConnectionIndication, null);
+    }
+
+    private void OnConnectionIndication(IedServer server, ClientConnection connection,
+        bool connected, object? parameter)
+    {
+        if (connected)
+            Interlocked.Increment(ref _connectedClients);
+        else
+            Interlocked.Decrement(ref _connectedClients);
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Task 4 — BRCB Buffering Notes

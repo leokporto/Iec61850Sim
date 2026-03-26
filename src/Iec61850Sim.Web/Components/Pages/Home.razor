@@ -10,14 +10,10 @@
 
     <MudItem xs="12">
         <MudPaper Elevation="1" Class="pa-3">
-            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                <MudText Typo="Typo.subtitle1"><b>Server</b></MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="StartServer">Start</MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="StopServer">Stop</MudButton>
-                <MudDivider Vertical="true" FlexItem="true" Class="mx-2" />
-                <MudText Typo="Typo.subtitle1"><b>Simulation</b></MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartSimulation">Start</MudButton>
-                <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="StopSimulation">Stop</MudButton>
+            <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+                <ServerControlComponent />
+                <MudDivider Vertical="true" FlexItem="true" Class="mx-1" />
+                <SimulationControlComponent />
             </MudStack>
         </MudPaper>
     </MudItem>
@@ -53,9 +49,4 @@
     {
         _selectedNode = node;
     }
-
-    void StartServer() => RunEngine.StartServer();
-    void StopServer() => RunEngine.StopServer();
-    void StartSimulation() => RunEngine.StartSimulation();
-    void StopSimulation() => RunEngine.StopSimulation();
 }

@@ -15,6 +15,10 @@ public class RuntimeEngine : IOperationRuntime
 
     public bool SimulationRunning { get; private set; }
     public bool ServerRunning { get; private set; }
+    public int ConnectedClients => iecHost.ConnectedClients;
+    public int Port => iecHost.Port;
+
+    public string Model => iecHost.ServerModel;
 
 
     public RuntimeEngine(
