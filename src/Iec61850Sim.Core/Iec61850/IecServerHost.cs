@@ -15,6 +15,9 @@ public class IecServerHost
     private readonly ControlCommandProcessor _commandProcessor;
     private readonly DeviceManager _deviceManager;
 
+    // Task 1: RCB handle cache — populated at startup and lazily from callbacks.
+    private RcbManager _rcbManager = new();
+
     // Task 7: ConcurrentDictionary for thread-safe access from libiec61850 callbacks.
     // Stores the ctlVal from SelectWithValue (SBO) — captured in CheckHandler so it is
     // available when ControlHandler fires on the subsequent Operate.
@@ -30,10 +33,16 @@ public class IecServerHost
         config.ReportBufferSize = 100000;
 
         _server = new IedServer(model, config);
-
         _server.SetServerIdentity("IEC61850-Sim", "Demo", "1.0.0");
 
+        // Task 1: resolve and cache RCB handles before the server starts.
+        _rcbManager = new RcbManager();
+        _rcbManager.Initialize(model, _registry);
+
         RegisterControlHandlers();
+
+        // Task 2: register the global RCB event callback.
+        RegisterRcbEventHandler();
     }
 
     public IedServer Server => _server;
@@ -68,16 +77,46 @@ public class IecServerHost
         _server = new IedServer(model, config);
         _server.SetServerIdentity("IEC61850-Sim", serverModel, "1.0.0");
 
+        // Task 1: re-initialise handle cache for the new model.
+        _rcbManager = new RcbManager();
+        _rcbManager.Initialize(model, _registry);
+
         RegisterControlHandlers();
+
+        // Task 2: re-register the RCB event handler against the new IedServer instance.
+        RegisterRcbEventHandler();
     }
 
-    // Publica todos os pontos registrados — chamado pelo ciclo do BackgroundService
+    // ─────────────────────────────────────────────────────────────────────────
+    // Task 3 — Report Trigger Logic (TrgOps)
+    //
+    // libiec61850 automatically evaluates TrgOps on every attribute update:
+    //
+    //   • dchg  — fires when UpdateXxxAttributeValue detects a value change.
+    //   • qchg  — fires when UpdateQuality detects a quality change.
+    //   • intg  — fires independently per-RCB on the IntgPd timer maintained
+    //             by the library; no application action is needed.
+    //
+    // The simulation loop calls Publish() every 1–2 s.  Control handlers call
+    // Publish(selectedPoints) immediately after command execution so the SCADA
+    // receives feedback synchronously in the same MMS exchange.
+    //
+    // Examples:
+    //   Analog measurement  → UpdateFloatAttributeValue(MMXU1.TotW.mag.f, value)
+    //   Breaker status      → UpdateAttributeValue(XCBR1.Pos.stVal, dbposBitString)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>Publishes all registered points — called by the BackgroundService simulation loop.</summary>
     public void Publish()
     {
         Publish(_registry.All);
     }
 
-    // Publica apenas os pontos recebidos — chamado imediatamente após um comando
+    /// <summary>
+    /// Publishes the supplied points into the IedModel.
+    /// Each UpdateXxxAttributeValue call triggers TrgOps evaluation (dchg/qchg) for any
+    /// enabled RCB whose DataSet references the updated attribute.
+    /// </summary>
     public void Publish(IEnumerable<DevicePoint> points)
     {
         foreach (var point in points)
@@ -100,7 +139,7 @@ public class IecServerHost
         }
     }
 
-    // Publica pontos por referência — usado nos handlers de comando
+    // Publishes points by reference — used inside command handlers.
     private void PublishByReferences(IEnumerable<string> references)
     {
         var points = references
@@ -124,7 +163,7 @@ public class IecServerHost
                 break;
 
             case int i when point.ValueAttribute.Type == DataAttributeType.CODEDENUM:
-                // Dbpos é MMS_BIT_STRING de 2 bits com encoding big-endian
+                // Dbpos is an MMS BIT_STRING(2) with big-endian encoding.
                 // Off=1 → [false,true], On=2 → [true,false]
                 var dbpos = MmsValue.NewBitString(2);
                 dbpos.BitStringFromUInt32BigEndian((uint)i);
@@ -172,7 +211,146 @@ public class IecServerHost
         return null;
     }
 
-    // Task 6: Read ctlModel and register only the handlers appropriate for that model.
+    // ─────────────────────────────────────────────────────────────────────────
+    // Task 2 — RCB Event Handler
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void RegisterRcbEventHandler()
+    {
+        _server.SetRCBEventHandler(OnRcbEvent, null);
+    }
+
+    /// <summary>
+    /// Global callback fired by libiec61850 for all RCB state changes.
+    ///
+    /// ENABLED        — client set RptEna=true; spontaneous reporting is now active.
+    /// DISABLED       — client set RptEna=false.
+    /// SET_PARAMETER  — client wrote an RCB attribute.  Writes to critical attributes
+    ///                  while RptEna=true are logged; the library enforces the constraint
+    ///                  natively for mandatory-disabled parameters (e.g. DatSet on BRCB).
+    /// GI             — client requested a General Interrogation (see Task 5).
+    /// PURGEBUF       — BRCB buffer was purged; sequence numbering resets (Task 4).
+    /// OVERFLOW       — BRCB buffer overflowed; entry loss should be alarmed.
+    /// REPORT_CREATED — a report entry was inserted into the BRCB buffer (normal operation).
+    /// </summary>
+    private void OnRcbEvent(object? parameter, ReportControlBlock rcb,
+        ClientConnection con, RCBEventType eventType, string parameterName,
+        MmsDataAccessError serviceError)
+    {
+        // Task 1: ensure the cache is populated even if startup traversal missed this RCB.
+        _rcbManager.EnsureCached(rcb);
+
+        switch (eventType)
+        {
+            case RCBEventType.ENABLED:
+                Console.WriteLine($"[RCB] {rcb.Name} ENABLED  DataSet='{rcb.DataSet}'");
+                break;
+
+            case RCBEventType.DISABLED:
+                Console.WriteLine($"[RCB] {rcb.Name} DISABLED");
+                break;
+
+            // Task 2: detect attempted reconfiguration of critical attributes while enabled.
+            // libiec61850 v1.6 fires SET_PARAMETER before applying the write.  In the C API
+            // the handler can set the serviceError out-param to block the write; the .NET
+            // delegate receives serviceError by value, so the block relies on the library's
+            // built-in constraints for attributes that require RptEna=false (e.g. DatSet on
+            // a BRCB).  We log the attempt for all critical attributes as an audit trail.
+            case RCBEventType.SET_PARAMETER:
+                if (rcb.RptEna && IsCriticalRcbAttribute(parameterName))
+                {
+                    Console.WriteLine(
+                        $"[RCB] WARNING: '{parameterName}' written on '{rcb.Name}' " +
+                        $"while RptEna=true — library constraint applies.");
+                }
+                break;
+
+            // Task 5: General Interrogation
+            case RCBEventType.GI:
+                HandleGi(rcb);
+                break;
+
+            // Task 4: BRCB buffer lifecycle
+            case RCBEventType.PURGEBUF:
+                // Buffer purged: sequence numbers reset.  Occurs on client reconnect if the
+                // client did not present a valid EntryID, or on explicit client request.
+                // The library maintains buffer state; no application-level action is needed.
+                Console.WriteLine($"[BRCB] {rcb.Name} buffer PURGED — SqNum reset");
+                break;
+
+            case RCBEventType.OVERFLOW:
+                // ReportBufferSize exceeded.  Consider increasing IedServerConfig.ReportBufferSize
+                // or reducing the simulation publish rate for high-frequency datasets.
+                Console.WriteLine($"[BRCB] {rcb.Name} buffer OVERFLOW — some events may be lost");
+                break;
+
+            case RCBEventType.REPORT_CREATED:
+                // Normal BRCB operation: an entry was buffered.  Log only at trace level.
+                break;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Task 5 — General Interrogation (GI) Response
+    //
+    // Flow:
+    //   1. OnRcbEvent receives RCBEventType.GI before the library assembles the report.
+    //   2. HandleGi identifies the DataSet owner LD and calls Publish() to flush the
+    //      current simulation state into the IedModel for that scope.
+    //   3. The library reads the freshly updated IedModel values and sends one MMS report
+    //      containing the full DataSet snapshot to the requesting client.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void HandleGi(ReportControlBlock rcb)
+    {
+        // Scope the refresh to the RCB's owning LD so we avoid unnecessary writes.
+        // For cross-LD DataSets (GetDataSetLd returns null) we fall back to all points.
+        var ldName = _rcbManager.GetDataSetLd(rcb);
+
+        var points = ldName != null
+            ? _registry.All.Where(p => p.LogicalDevice == ldName)
+            : _registry.All;
+
+        Publish(points);
+
+        Console.WriteLine($"[GI] {rcb.Name} → snapshot refreshed (scope: {ldName ?? "ALL"})");
+    }
+
+    // Critical RCB attributes: changing these while RptEna=true is non-compliant per IEC 61850.
+    private static bool IsCriticalRcbAttribute(string? parameterName) =>
+        parameterName is "DatSet" or "TrgOps" or "OptFlds" or "IntgPd" or "BufTm" or "ConfRev";
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Task 4 — BRCB Buffering Notes
+    //
+    // The libiec61850 library manages the BRCB buffer automatically:
+    //
+    //   • On RptEna=true (ENABLED event):
+    //       - If the client presents a valid EntryID (resume), the library delivers
+    //         buffered entries starting from that sequence number (SoE delivery).
+    //       - If no EntryID or EntryID is invalid, PurgeBuf fires and the buffer is
+    //         cleared before new entries are accepted.
+    //
+    //   • During connection drop:
+    //       - The buffer continues accepting entries (up to ReportBufferSize).
+    //       - SqNum increments with each buffered report.
+    //       - TimeofEntry records the exact time each entry was buffered.
+    //
+    //   • On reconnect and RptEna=true with a valid EntryID:
+    //       - The library replays all buffered entries in sequence order (SoE).
+    //       - Once the buffer is drained, live reporting resumes automatically.
+    //
+    //   • OVERFLOW event means ReportBufferSize was exhausted; increase the buffer
+    //     in IedServerConfig or reduce the event rate for that DataSet.
+    //
+    // No application-level buffer management is required beyond the IedServerConfig
+    // setting and responding to OVERFLOW (alert + optionally pause high-freq updates).
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Task 6 (existing): Control handler registration
+    // ─────────────────────────────────────────────────────────────────────────
+
     private void RegisterControlHandlers()
     {
         var groups = _registry.GetByFc(FunctionalConstraint.CO)
@@ -203,8 +381,6 @@ public class IecServerHost
         }
     }
 
-    // Task 6: Reads the ctlModel attribute from the Pos DataObject's children.
-    // Defaults to DIRECT_NORMAL when the attribute is absent or unreadable.
     private ControlModel ReadCtlModel(DataObject pos)
     {
         try
@@ -227,8 +403,6 @@ public class IecServerHost
         return ControlModel.DIRECT_NORMAL;
     }
 
-    // Task 2: Map ControlOperateResult to ControlHandlerResult.
-    // On failure, SetAddCause so the library includes it in CommandTermination-.
     private ControlHandlerResult ControlHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test)
     {
         var controller = (CSWI)parameter;
@@ -245,16 +419,12 @@ public class IecServerHost
         return ControlHandlerResult.OK;
     }
 
-    // Task 4: Validate before the command reaches ControlHandler.
-    // Failures return HARDWARE_FAULT so the library generates a Response- with AddCause.
     private CheckHandlerResult CheckHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
     {
-        // Store ctlVal for SBO models — ControlAction does not expose it in ControlHandler for SBO.
         if (ctlVal != null && parameter is CSWI ctrl)
         {
             _pendingSelectCtlVals[ctrl.Name] = ctlVal;
 
-            // Decode command direction for interlock checks
             var pos = ctlVal.GetType() == MmsType.MMS_BOOLEAN
                 ? (ctlVal.GetBoolean() ? eDblPos.On : eDblPos.Off)
                 : (eDblPos)ctlVal.ToInt32();
@@ -298,21 +468,15 @@ public class IecServerHost
         return CheckHandlerResult.ACCEPTED;
     }
 
-    // Task 1: SelectStateChanged must never execute a command.
-    // Execution happens exclusively in ControlHandler when the client sends Operate.
     private void SelectStateChanged(ControlAction action, object parameter, bool isSelected, SelectStateChangedReason reason)
     {
         var controller = (CSWI)parameter;
         Console.WriteLine($"[CSWI] {controller.Name} select state: isSelected={isSelected}, reason={reason}");
 
-        // Clean up pending ctlVal on any deselection event.
-        // On SELECTED: retain pending ctlVal; ControlHandler will consume it on Operate.
         if (!isSelected || reason != SelectStateChangedReason.SELECT_STATE_REASON_SELECTED)
             _pendingSelectCtlVals.TryRemove(controller.Name, out _);
     }
 
-    // Wraps ControlAction.SetAddCause to be safe when called from test context with an
-    // uninitialized ControlAction (no native handle). In production the action is always valid.
     private static void TrySetAddCause(ControlAction action, ControlAddCause cause)
     {
         try { action.SetAddCause(cause); }

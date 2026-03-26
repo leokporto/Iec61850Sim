@@ -223,7 +223,7 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 - [x] Add settings page (model path, server model, port — with safe restart)
 - [ ] Add available Ips page
 - [x] Add port selection field (available in Settings page)
-- [ ] Add reports support
+- [x] Add reports support
 - [ ] Add datasets support
 - [x] Add LLN0 LN support
 - [x] Add LPHD LN support
