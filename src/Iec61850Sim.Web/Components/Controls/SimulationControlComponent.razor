@@ -1,0 +1,57 @@
+@using Iec61850Sim.Core
+@implements IDisposable
+
+@inject RuntimeEngine RunEngine
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
+    <MudText Typo="Typo.subtitle2"><b>Simulation</b></MudText>
+
+    <MudDivider Vertical="true" FlexItem="true" />
+
+    <MudIconButton Icon="@Icons.Material.Filled.PlayArrow"
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   OnClick="@(() => RunEngine.StartSimulation())" />
+
+    <MudIconButton Icon="@Icons.Material.Filled.Stop"
+                   Color="Color.Default"
+                   Size="Size.Small"
+                   OnClick="@(() => RunEngine.StopSimulation())" />
+
+    <MudDivider Vertical="true" FlexItem="true" />
+
+    <MudChip T="string"
+             Size="Size.Small"
+             Color="@(RunEngine.SimulationRunning ? Color.Primary : Color.Default)"
+             Variant="Variant.Filled">
+        @(RunEngine.SimulationRunning ? "Running" : "Stopped")
+    </MudChip>
+</MudStack>
+
+@code {
+    private PeriodicTimer? _timer;
+    private readonly CancellationTokenSource _cts = new();
+
+    protected override void OnInitialized()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = RefreshLoop(_cts.Token);
+    }
+
+    private async Task RefreshLoop(CancellationToken token)
+    {
+        try
+        {
+            while (await _timer!.WaitForNextTickAsync(token))
+                await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _timer?.Dispose();
+        _cts.Dispose();
+    }
+}

@@ -1,0 +1,73 @@
+@using Iec61850Sim.Core
+@implements IDisposable
+
+@inject RuntimeEngine RunEngine
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
+    <MudText Typo="Typo.subtitle2"><b>Server</b></MudText>
+
+    <MudDivider Vertical="true" FlexItem="true" />
+
+    <MudText Typo="Typo.subtitle2">Model: @RunEngine.Model</MudText>
+
+    <MudDivider Vertical="true" FlexItem="true" />
+
+    <MudText Typo="Typo.subtitle2">Port: @RunEngine.Port</MudText>
+
+    <MudDivider Vertical="true" FlexItem="true" />
+
+    <MudIconButton Icon="@Icons.Material.Filled.PlayArrow"
+                   Color="Color.Success"
+                   Size="Size.Small"
+                   OnClick="@(() => RunEngine.StartServer())" />
+
+    <MudIconButton Icon="@Icons.Material.Filled.Stop"
+                   Color="Color.Error"
+                   Size="Size.Small"
+                   OnClick="@(() => RunEngine.StopServer())" />
+
+    <MudDivider Vertical="true" FlexItem="true" />
+
+    <MudChip T="string"
+             Size="Size.Small"
+             Color="@(RunEngine.ServerRunning ? Color.Success : Color.Default)"
+             Variant="Variant.Filled">
+        @(RunEngine.ServerRunning ? "Running" : "Stopped")
+    </MudChip>
+
+    <MudChip T="string"
+             Size="Size.Small"
+             Color="Color.Info"
+             Variant="Variant.Outlined"
+             Icon="@Icons.Material.Filled.People">
+        @RunEngine.ConnectedClients
+    </MudChip>
+</MudStack>
+
+@code {
+    private PeriodicTimer? _timer;
+    private readonly CancellationTokenSource _cts = new();
+
+    protected override void OnInitialized()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = RefreshLoop(_cts.Token);
+    }
+
+    private async Task RefreshLoop(CancellationToken token)
+    {
+        try
+        {
+            while (await _timer!.WaitForNextTickAsync(token))
+                await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _timer?.Dispose();
+        _cts.Dispose();
+    }
+}
