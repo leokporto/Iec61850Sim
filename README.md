@@ -11,7 +11,7 @@ This project is useful for:
 - Running a lightweight self-hosted simulator for development and integration scenarios
 - Experimenting with simulated device behavior and periodic value publication
 
-<img src="./docs/imgs/screenshot1.png" alt="Iec61850Sim screenshot" width="600">
+<img src="./docs/imgs/screenshot2.png" alt="Iec61850Sim screenshot" width="600">
 
 ---
 
@@ -217,22 +217,10 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 
 ## 📝 Backlog
 
-- [x] Commands Simulation
 - [ ] Parse scl files automatically
 - [ ] Discover Ied Server model
-- [x] Add settings page (model path, server model, port — with safe restart)
-- [ ] Add available Ips page
-- [x] Add port selection field (available in Settings page)
-- [x] Add reports support
-- [ ] Add datasets support
-- [x] Add LLN0 LN support
-- [x] Add LPHD LN support
-- [x] Add XCBR and CSWI support
-- [x] Add CILO LN support
-- [x] Add XSWI LN support
 - [ ] Add COMTRADE support
 - [ ] Add FC Filter over devices point panel
-- [x] Basic Simulation UI with model tree viewer
 - [ ] Upload Scl files (maybe). Those files can be passed to *ConfigFiles* folder either before the execution or over a container's image creation.
 
 ---
