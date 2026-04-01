@@ -16,7 +16,8 @@
       "Bash(xargs grep:*)",
       "Bash(ls:*)",
       "Bash(/tmp/libiec61850_research_summary.txt:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(curl:*)"
     ]
   }
 }

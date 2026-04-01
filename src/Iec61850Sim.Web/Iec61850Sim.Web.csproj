@@ -15,6 +15,9 @@
         <Reference Include="iec61850dotnet">
             <HintPath>..\..\ThirdPartyRefs\iec61850dotnet.dll</HintPath>
         </Reference>
+        <Reference Include="SCLParser">
+            <HintPath>..\..\ThirdPartyRefs\SCLParser.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup>

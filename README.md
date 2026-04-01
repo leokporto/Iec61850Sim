@@ -197,6 +197,7 @@ Selecting a node at the Logical Node level or below displays a live point table 
 - Device simulation
 - Background simulation loop
 - Configuration file loading
+- Parse scl files automatically
 
 ---
 
@@ -217,11 +218,8 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 
 ## 📝 Backlog
 
-- [ ] Parse scl files automatically
-- [ ] Discover Ied Server model
 - [ ] Add COMTRADE support
 - [ ] Add FC Filter over devices point panel
-- [ ] Upload Scl files (maybe). Those files can be passed to *ConfigFiles* folder either before the execution or over a container's image creation.
 
 ---
 

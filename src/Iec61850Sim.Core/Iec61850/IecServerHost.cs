@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
+
 using IEC61850.Common;
 using IEC61850.Server;
+
 using Iec61850Sim.Core.Commands;
 using Iec61850Sim.Core.Device;
 using Iec61850Sim.Core.Model;
@@ -10,31 +12,25 @@ namespace Iec61850Sim.Core.Iec61850;
 
 public class IecServerHost
 {
-    private IedServer _server;
-    private readonly PointRegistry _registry;
     private readonly ControlCommandProcessor _commandProcessor;
     private readonly DeviceManager _deviceManager;
-    private int _connectedClients;
-    private int _port = 102;
     private readonly string _model = "Demo";
-
-    // Task 1: RCB handle cache — populated at startup and lazily from callbacks.
-    private RcbManager _rcbManager = new();
-
-    // Thread-safe connected client counter — incremented/decremented in the connection callback.
-    public int ConnectedClients => _connectedClients;
-
-    public int Port => _port;
-
-    public string ServerModel => _model;
 
 
     // Task 7: ConcurrentDictionary for thread-safe access from libiec61850 callbacks.
     // Stores the ctlVal from SelectWithValue (SBO) — captured in CheckHandler so it is
     // available when ControlHandler fires on the subsequent Operate.
     private readonly ConcurrentDictionary<string, MmsValue> _pendingSelectCtlVals = new();
+    private readonly PointRegistry _registry;
+    private int _connectedClients;
+    private int _port = 102;
 
-    public IecServerHost(IedModel model, PointRegistry registry, DeviceManager deviceManager, ControlCommandProcessor commandProcessor)
+    // Task 1: RCB handle cache — populated at startup and lazily from callbacks.
+    private RcbManager _rcbManager = new();
+    private IedServer _server;
+
+    public IecServerHost(IedModel model, PointRegistry registry, DeviceManager deviceManager,
+        ControlCommandProcessor commandProcessor)
     {
         _registry = registry;
         _deviceManager = deviceManager;
@@ -55,6 +51,13 @@ public class IecServerHost
         RegisterConnectionHandler();
     }
 
+    // Thread-safe connected client counter — incremented/decremented in the connection callback.
+    public int ConnectedClients => _connectedClients;
+
+    public int Port => _port;
+
+    public string ServerModel => _model;
+
     public IedServer Server => _server;
 
     public void Start(int port = 102)
@@ -72,6 +75,19 @@ public class IecServerHost
     {
         _server.Stop();
         _server.Destroy();
+    }
+
+    /// <summary>
+    /// Re-registers control handlers and RCB handles against a populated registry.
+    /// Called once at startup after the model scan and device build are complete,
+    /// because the constructor runs before the registry is populated.
+    /// Does NOT recreate the IedServer.
+    /// </summary>
+    public void RefreshRegistrations(IedModel model)
+    {
+        _rcbManager = new RcbManager();
+        _rcbManager.Initialize(model, _registry);
+        RegisterControlHandlers();
     }
 
     /// <summary>
@@ -275,6 +291,7 @@ public class IecServerHost
                         $"[RCB] WARNING: '{parameterName}' written on '{rcb.Name}' " +
                         $"while RptEna=true — library constraint applies.");
                 }
+
                 break;
 
             // Task 5: General Interrogation
@@ -388,8 +405,8 @@ public class IecServerHost
             var point = g.First();
 
             var pos = (DataObject)point.ValueAttribute
-                .GetParent()   // Oper
-                .GetParent();  // Pos
+                .GetParent() // Oper
+                .GetParent(); // Pos
 
             var controller = _deviceManager.Controllers
                 .FirstOrDefault(c => c.Name == g.Key);
@@ -424,7 +441,9 @@ public class IecServerHost
                 }
             }
         }
-        catch { }
+        catch
+        {
+        }
 
         return ControlModel.DIRECT_NORMAL;
     }
@@ -445,7 +464,8 @@ public class IecServerHost
         return ControlHandlerResult.OK;
     }
 
-    private CheckHandlerResult CheckHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck)
+    private CheckHandlerResult CheckHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test,
+        bool interlockCheck)
     {
         if (ctlVal != null && parameter is CSWI ctrl)
         {
@@ -470,6 +490,7 @@ public class IecServerHost
                     TrySetAddCause(action, ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING);
                     return CheckHandlerResult.HARDWARE_FAULT;
                 }
+
                 if (pos == eDblPos.On && !ctrl.Cilo.CanClose(_registry))
                 {
                     TrySetAddCause(action, ControlAddCause.ADD_CAUSE_BLOCKED_BY_INTERLOCKING);
@@ -494,7 +515,8 @@ public class IecServerHost
         return CheckHandlerResult.ACCEPTED;
     }
 
-    private void SelectStateChanged(ControlAction action, object parameter, bool isSelected, SelectStateChangedReason reason)
+    private void SelectStateChanged(ControlAction action, object parameter, bool isSelected,
+        SelectStateChangedReason reason)
     {
         var controller = (CSWI)parameter;
         Console.WriteLine($"[CSWI] {controller.Name} select state: isSelected={isSelected}, reason={reason}");
@@ -505,7 +527,12 @@ public class IecServerHost
 
     private static void TrySetAddCause(ControlAction action, ControlAddCause cause)
     {
-        try { action.SetAddCause(cause); }
-        catch { }
+        try
+        {
+            action.SetAddCause(cause);
+        }
+        catch
+        {
+        }
     }
 }
