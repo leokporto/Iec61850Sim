@@ -72,6 +72,13 @@ dotnet publish -c Release -r win-x64 --self-contained true
 
 After publishing, you can execute the `Iec61850.Web.exe` file to run the application without using any IDE.
 
+```bash
+./Iec61850.Web.exe -IEC_MODEL:"./Config/Demo_Ed2.icd"
+```
+
+> [!WARNING]
+> IEC_MODEL parameter is needed to run the application. It tells the application where to find the SCL or cfg file to be used.
+
 
 **Wpf with WebView2 (Windows only)**
 
@@ -80,8 +87,17 @@ The project Iec61850Sim.Desktop is a Wpf project containing just a window with W
 It is possible to publish it by running the following command:
 
 ```bash
-dotnet publish src/Iec61850Sim.Web -c Release -r win-x64
+dotnet publish src/Iec61850Sim.Desktop -c Release -r win-x64
 ```
+
+To run it, navigate to the folder where *Iec61850.Desktop.exe* resides and use the following comand to run it:
+
+```bash
+./Iec61850.Desktop.exe -IEC_MODEL:"./Config/Demo_Ed2.icd"
+```
+
+> [!WARNING]
+> IEC_MODEL parameter is needed to run the application. It tells the application where to find the SCL or cfg file to be used.
 
 ---
 

@@ -4,7 +4,9 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 # Third party references
-ThirdPartyRefs/
+ThirdPartyRefs/*.dll
+ThirdPartyRefs/*.pdb
+ThirdPartyRefs/*.deps.json
 
 # Claude Code - user-specific local settings (project settings.json is tracked)
 .claude/settings.local.json
