@@ -59,7 +59,9 @@ Execute a container:
 docker run -p 5000:8080 -p 102:102 leokporto/iec61850sim -r
 ```
 
-:warning: **Warning:** To build an image toy will need to create a `ThirdPartyRefs` folder in the same level as docker and .net project folders and add `libiec61850.so`, `libiec61850.so.1.6.1` and `iec61850dotnet.dll` files to it. You can create those files following MZ-Automation's [github repo](https://github.com/mz-automation/libiec61850).
+
+> [!WARNING]
+> To build an image you will need to create a `ThirdPartyRefs` folder in the same level as docker and .net project folders and add `libiec61850.so`, `libiec61850.so.1.6.1` and `iec61850dotnet.dll` files to it. You can create those files following MZ-Automation's [github repo](https://github.com/mz-automation/libiec61850).
 
 
 **Self-hosted blazor app**
@@ -75,6 +77,7 @@ After publishing, you can execute the `Iec61850.Web.exe` file to run the applica
 ```bash
 ./Iec61850.Web.exe -IEC_MODEL:"./Config/Demo_Ed2.icd"
 ```
+
 
 > [!WARNING]
 > IEC_MODEL parameter is needed to run the application. It tells the application where to find the SCL or cfg file to be used.
@@ -95,6 +98,7 @@ To run it, navigate to the folder where *Iec61850.Desktop.exe* resides and use t
 ```bash
 ./Iec61850.Desktop.exe -IEC_MODEL:"./Config/Demo_Ed2.icd"
 ```
+
 
 > [!WARNING]
 > IEC_MODEL parameter is needed to run the application. It tells the application where to find the SCL or cfg file to be used.
@@ -149,7 +153,7 @@ The application sets the IED name to:
 - `Demo`
 
 ```xml
-<IED name="Demo" type="S61850 for PC" manufacturer="INFO TECH" configVersion="1.0" originalSclVersion="2007" originalSclRevision="B" originalSclRelease="4">
+<IED name="Demo" type="S61850 for PC" manufacturer="IEC61850Sim" configVersion="1.0" originalSclVersion="2007" originalSclRevision="B" originalSclRelease="4">
 ...
 </IED>
 ```
