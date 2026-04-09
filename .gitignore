@@ -7,6 +7,8 @@
 ThirdPartyRefs/*.dll
 ThirdPartyRefs/*.pdb
 ThirdPartyRefs/*.deps.json
+ThirdPartyRefs/*.so
+ThirdPartyRefs/*.so.*
 
 # Claude Code - user-specific local settings (project settings.json is tracked)
 .claude/settings.local.json

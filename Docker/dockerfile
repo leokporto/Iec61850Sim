@@ -9,7 +9,7 @@ RUN dotnet restore Iec61850Sim.Web/Iec61850Sim.Web.csproj
 
 COPY src/Iec61850Sim.Core/ Iec61850Sim.Core/
 COPY src/Iec61850Sim.Web/ Iec61850Sim.Web/
-COPY ThirdPartyRefs/ ThirdPartyRefs/
+COPY ThirdPartyRefs/ ../ThirdPartyRefs/
 
 WORKDIR /src/Iec61850Sim.Web
 
@@ -22,6 +22,8 @@ WORKDIR /app
 COPY --from=build /app/publish .
 COPY ThirdPartyRefs/libiec61850.so /app/
 COPY ThirdPartyRefs/libiec61850.so.1.6.1 /app/
+
+ENV IEC_MODEL=./Config/Demo_Ed2.icd
 
 EXPOSE 8080
 EXPOSE 102
