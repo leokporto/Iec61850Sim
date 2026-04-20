@@ -1,5 +1,6 @@
 @page "/"
 
+@using Iec61850Sim.Core.Comtrade
 @using Iec61850Sim.Web.Components.Controls
 @inject RuntimeEngine RunEngine
 @inject IModelNode ModelTree
@@ -14,6 +15,8 @@
                 <ServerControlComponent />
                 <MudDivider Vertical="true" FlexItem="true" Class="mx-1" />
                 <SimulationControlComponent />
+                <MudDivider Vertical="true" FlexItem="true" Class="mx-1" />
+                <ComtradeControlComponent />
             </MudStack>
         </MudPaper>
     </MudItem>

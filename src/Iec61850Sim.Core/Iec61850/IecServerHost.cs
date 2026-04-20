@@ -39,6 +39,14 @@ public class IecServerHost
         var config = new IedServerConfig();
         config.ReportBufferSize = 100000;
 
+        // Serviço de arquivos MMS: habilita e aponta para o diretório COMTRADE.
+        // A libiec61850 serve GetFile/GetFileAttributeValues automaticamente a partir
+        // de FileServiceBasePath — nenhum handler adicional é necessário.
+        // Nota: a API .NET da libiec61850 não expõe callback de DeleteFile; exclusões
+        // iniciadas pelo cliente MMS não são notificadas à aplicação.
+        config.FileServiceEnabled = true;
+        config.FileServiceBasePath = Path.Combine(AppContext.BaseDirectory, "COMTRADE");
+
         _server = new IedServer(model, config);
         _server.SetServerIdentity("IEC61850-Sim", "Demo", "1.0.0");
 
@@ -100,6 +108,11 @@ public class IecServerHost
 
         var config = new IedServerConfig();
         config.ReportBufferSize = 100000;
+
+        // Mesmo comportamento do construtor: serviço de arquivos habilitado sobre
+        // o diretório COMTRADE. GetFile é automático; DeleteFile não é notificado.
+        config.FileServiceEnabled = true;
+        config.FileServiceBasePath = Path.Combine(AppContext.BaseDirectory, "COMTRADE");
 
         _server = new IedServer(model, config);
         _server.SetServerIdentity("IEC61850-Sim", serverModel, "1.0.0");

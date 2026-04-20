@@ -1,0 +1,60 @@
+@using Iec61850Sim.Core.Comtrade
+@using Iec61850Sim.Core.Comtrade.Models
+
+@inject IComtradeService ComtradeService
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
+    <MudText Typo="Typo.subtitle2"><b>COMTRADE</b></MudText>
+
+    <MudDivider Vertical="true" FlexItem="true" />
+
+    <MudCheckBox @bind-Value="_generateZip"
+                 Label="ZIP"
+                 Size="Size.Small"
+                 Color="Color.Secondary" />
+
+    <MudIconButton Icon="@Icons.Material.Filled.SaveAlt"
+                   Color="Color.Secondary"
+                   Size="Size.Small"
+                   Disabled="@_isGenerating"
+                   OnClick="@GenerateFault" />
+
+    @if (_lastRecord is not null)
+    {
+        <MudText Typo="Typo.caption">
+            @_lastRecord.RecordName &mdash; @_lastRecord.Timestamp.ToString("HH:mm:ss")
+        </MudText>
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <MudText Typo="Typo.caption" Color="Color.Error">@_errorMessage</MudText>
+    }
+</MudStack>
+
+@code {
+    private bool _generateZip = true;
+    private bool _isGenerating;
+    private ComtradeRecord? _lastRecord;
+    private string? _errorMessage;
+
+    private async Task GenerateFault()
+    {
+        _isGenerating = true;
+        _errorMessage = null;
+
+        try
+        {
+            var options = new ComtradeOptions { GenerateZip = _generateZip };
+            _lastRecord = await ComtradeService.GenerateFaultAsync(options);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isGenerating = false;
+        }
+    }
+}

@@ -10,6 +10,7 @@ using Iec61850Sim.Core.Model.Tree;
 using Iec61850Sim.Core.Points;
 using Iec61850Sim.Core.Scl;
 using Iec61850Sim.Core.Simulation;
+using Iec61850Sim.Core.Comtrade;
 using Iec61850Sim.Core.Iec61850;
 using Iec61850Sim.Web.Components;
 using Iec61850Sim.Web.Services;
@@ -45,6 +46,7 @@ public class Program
         builder.Services.AddSingleton<ISclConversionService, SclConversionService>();
         builder.Services.AddSingleton<IedModel>(IedServerManager.CreateModel);
         builder.Services.AddSingleton<PointRegistry>();
+        builder.Services.AddSingleton<IPointRegistry>(sp => sp.GetRequiredService<PointRegistry>());
         builder.Services.AddSingleton<DeviceManager>();
         builder.Services.AddSingleton<SimulationClock>();
         builder.Services.AddSingleton<SimulationEngine>();
@@ -54,6 +56,7 @@ public class Program
         builder.Services.AddSingleton<IOperationRuntime>(sp => sp.GetRequiredService<RuntimeEngine>());
         builder.Services.AddSingleton<ManualOperationService>();
         builder.Services.AddSingleton<IedServerManager>();
+        builder.Services.AddSingleton<IComtradeService, ComtradeService>();
         builder.Services.AddSingleton<IModelNode>(IedServerManager.CreateModelNode);
         builder.Services.AddHostedService<SimulationService>();
 
