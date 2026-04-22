@@ -12,21 +12,21 @@ public class ComtradeService : IComtradeService
 {
     private readonly IPointRegistry _pointRegistry;
     private readonly ILogger<ComtradeService> _logger;
-    private readonly string _outputDirectory;
+    private readonly string _fileStoreRoot;
     private readonly List<ComtradeRecord> _records = [];
 
     // Construtor usado pela injeção de dependência
     public ComtradeService(IPointRegistry pointRegistry, ILogger<ComtradeService> logger)
-        : this(pointRegistry, logger, Path.Combine(AppContext.BaseDirectory, "COMTRADE"))
+        : this(pointRegistry, logger, Path.Combine(AppContext.BaseDirectory, "FileStore"))
     {
     }
 
-    // Construtor com diretório configurável (utilizado em testes)
-    public ComtradeService(IPointRegistry pointRegistry, ILogger<ComtradeService> logger, string outputDirectory)
+    // Construtor com raiz FileStore configurável (utilizado em testes)
+    public ComtradeService(IPointRegistry pointRegistry, ILogger<ComtradeService> logger, string fileStoreRoot)
     {
         _pointRegistry = pointRegistry;
         _logger = logger;
-        _outputDirectory = outputDirectory;
+        _fileStoreRoot = fileStoreRoot;
     }
 
     public async Task<ComtradeRecord> GenerateFaultAsync(ComtradeOptions options)
@@ -47,10 +47,19 @@ public class ComtradeService : IComtradeService
                              && p.DataObject == "Pos")
                 .ToList();
 
+            // Deriva ldName dos pontos digitais (XCBR/XSWI); usa analógicos como fallback.
+            // Conforme IEC 61850-8-1 cláusula 23.1, arquivos COMTRADE ficam em
+            // FileStore/LD/<ldName>/COMTRADE/ sob cada LD que originou os canais.
+            var ldName = digitalPoints.FirstOrDefault()?.LogicalDevice
+                      ?? analogPoints.FirstOrDefault()?.LogicalDevice
+                      ?? "DEFAULT";
+
+            var outputDirectory = Path.Combine(_fileStoreRoot, "LD", ldName, "COMTRADE");
+
             try
             {
                 var content = ComtradeGenerator.Generate(recordName, timestamp, analogPoints, digitalPoints);
-                var filePath = ComtradeFileWriter.Write(recordName, content, _outputDirectory, options.GenerateZip);
+                var filePath = ComtradeFileWriter.Write(recordName, content, outputDirectory, options.GenerateZip);
 
                 var record = new ComtradeRecord
                 {

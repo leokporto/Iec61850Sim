@@ -628,6 +628,211 @@
        </DAI>
       </DOI>
      </LN>
+     <!-- Gravador de perturbação: função principal (IEC 61850-7-4 RDRE) -->
+     <LN lnType="RDRE_0" lnClass="RDRE" prefix="" inst="1">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="vendor" valKind="RO">
+        <Val>Iec61850Sim</Val>
+       </DAI>
+       <DAI name="swRev" valKind="RO">
+        <Val>1.0</Val>
+       </DAI>
+       <DAI name="d" valKind="RO">
+        <Val>Disturbance recorder function</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Canais analógicos do gravador: corrente fase A (I3pRADR1) -->
+     <LN lnType="RADR_0" lnClass="RADR" prefix="I3p" inst="1">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="d" valKind="RO">
+        <Val>Phase A current channel</Val>
+       </DAI>
+      </DOI>
+      <DOI name="ChNum">
+       <DAI name="setVal" valKind="RO">
+        <Val>1</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Corrente fase B (I3pRADR2) -->
+     <LN lnType="RADR_0" lnClass="RADR" prefix="I3p" inst="2">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="d" valKind="RO">
+        <Val>Phase B current channel</Val>
+       </DAI>
+      </DOI>
+      <DOI name="ChNum">
+       <DAI name="setVal" valKind="RO">
+        <Val>2</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Corrente fase C (I3pRADR3) -->
+     <LN lnType="RADR_0" lnClass="RADR" prefix="I3p" inst="3">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="d" valKind="RO">
+        <Val>Phase C current channel</Val>
+       </DAI>
+      </DOI>
+      <DOI name="ChNum">
+       <DAI name="setVal" valKind="RO">
+        <Val>3</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Tensão fase A (U3pRADR4) -->
+     <LN lnType="RADR_0" lnClass="RADR" prefix="U3p" inst="4">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="d" valKind="RO">
+        <Val>Phase A voltage channel</Val>
+       </DAI>
+      </DOI>
+      <DOI name="ChNum">
+       <DAI name="setVal" valKind="RO">
+        <Val>4</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Tensão fase B (U3pRADR5) -->
+     <LN lnType="RADR_0" lnClass="RADR" prefix="U3p" inst="5">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="d" valKind="RO">
+        <Val>Phase B voltage channel</Val>
+       </DAI>
+      </DOI>
+      <DOI name="ChNum">
+       <DAI name="setVal" valKind="RO">
+        <Val>5</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Tensão fase C (U3pRADR6) -->
+     <LN lnType="RADR_0" lnClass="RADR" prefix="U3p" inst="6">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="d" valKind="RO">
+        <Val>Phase C voltage channel</Val>
+       </DAI>
+      </DOI>
+      <DOI name="ChNum">
+       <DAI name="setVal" valKind="RO">
+        <Val>6</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Canais binários do gravador: disjuntor 1 (Obj1RBDR1) -->
+     <LN lnType="RBDR_0" lnClass="RBDR" prefix="Obj1" inst="1">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="d" valKind="RO">
+        <Val>Circuit breaker 1 binary channel</Val>
+       </DAI>
+      </DOI>
+      <DOI name="ChNum">
+       <DAI name="setVal" valKind="RO">
+        <Val>1</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Disjuntor 2 (Obj3RBDR2) -->
+     <LN lnType="RBDR_0" lnClass="RBDR" prefix="Obj3" inst="2">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="d" valKind="RO">
+        <Val>Circuit breaker 2 binary channel</Val>
+       </DAI>
+      </DOI>
+      <DOI name="ChNum">
+       <DAI name="setVal" valKind="RO">
+        <Val>2</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Seccionadora (Obj2RBDR3) -->
+     <LN lnType="RBDR_0" lnClass="RBDR" prefix="Obj2" inst="3">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="d" valKind="RO">
+        <Val>Disconnector binary channel</Val>
+       </DAI>
+      </DOI>
+      <DOI name="ChNum">
+       <DAI name="setVal" valKind="RO">
+        <Val>3</Val>
+       </DAI>
+      </DOI>
+     </LN>
+     <!-- Gerenciamento de registros de perturbação (IEC 61850-7-4 RDRS) -->
+     <LN lnType="RDRS_0" lnClass="RDRS" prefix="" inst="1">
+      <DOI name="Mod">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+      <DOI name="NamPlt">
+       <DAI name="vendor" valKind="RO">
+        <Val>Iec61850Sim</Val>
+       </DAI>
+       <DAI name="swRev" valKind="RO">
+        <Val>1.0</Val>
+       </DAI>
+       <DAI name="d" valKind="RO">
+        <Val>Disturbance record handling</Val>
+       </DAI>
+      </DOI>
+      <DOI name="DltRcd">
+       <DAI name="ctlModel" valKind="RO">
+        <Val>status-only</Val>
+       </DAI>
+      </DOI>
+     </LN>
     </LDevice>
    </Server>
   </AccessPoint>
@@ -754,6 +959,39 @@
    <DO name="SwTyp" type="ENS_4"/>
    <DO name="SwOpCap" type="ENS_5"/>
   </LNodeType>
+  <!-- Gravador de perturbação: função principal -->
+  <LNodeType id="RDRE_0" lnClass="RDRE">
+   <DO name="Mod" type="ENC_0"/>
+   <DO name="Beh" type="ENS_0"/>
+   <DO name="Health" type="ENS_1"/>
+   <DO name="NamPlt" type="LPL_0"/>
+  </LNodeType>
+  <!-- Gravador de perturbação: canal analógico -->
+  <LNodeType id="RADR_0" lnClass="RADR">
+   <DO name="Mod" type="ENC_0"/>
+   <DO name="Beh" type="ENS_0"/>
+   <DO name="Health" type="ENS_1"/>
+   <DO name="NamPlt" type="LPL_0"/>
+   <DO name="ChNum" type="ING_0"/>
+   <DO name="ChTrg" type="SPS_0"/>
+  </LNodeType>
+  <!-- Gravador de perturbação: canal binário -->
+  <LNodeType id="RBDR_0" lnClass="RBDR">
+   <DO name="Mod" type="ENC_0"/>
+   <DO name="Beh" type="ENS_0"/>
+   <DO name="Health" type="ENS_1"/>
+   <DO name="NamPlt" type="LPL_0"/>
+   <DO name="ChNum" type="ING_0"/>
+   <DO name="ChTrg" type="SPS_0"/>
+  </LNodeType>
+  <!-- Gravador de perturbação: gerenciamento de registros -->
+  <LNodeType id="RDRS_0" lnClass="RDRS">
+   <DO name="Mod" type="ENC_0"/>
+   <DO name="Beh" type="ENS_0"/>
+   <DO name="Health" type="ENS_1"/>
+   <DO name="NamPlt" type="LPL_0"/>
+   <DO name="DltRcd" type="SPC_0"/>
+  </LNodeType>
   <DOType id="ACD_0" cdc="ACD">
    <DA name="general" fc="ST" bType="BOOLEAN"/>
    <DA name="dirGeneral" fc="ST" bType="Enum" type="FaultDirectionKind"/>
@@ -872,6 +1110,10 @@
    <DA name="stVal" fc="ST" bType="INT32"/>
    <DA name="q" fc="ST" bType="Quality"/>
    <DA name="t" fc="ST" bType="Timestamp"/>
+  </DOType>
+  <!-- ING: número inteiro configurável (FC=CF), usado em ChNum de RADR/RBDR -->
+  <DOType id="ING_0" cdc="ING">
+   <DA name="setVal" fc="CF" bType="INT32"/>
   </DOType>
   <DOType id="LPL_0" cdc="LPL">
    <DA name="vendor" fc="DC" bType="VisString255"/>

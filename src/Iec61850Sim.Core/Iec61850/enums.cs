@@ -18,7 +18,13 @@ public enum eLnType
     CILO,
 
     LLN0,
-    LPHD
+    LPHD,
+
+    // Gravador de perturbação (Disturbance Recorder) — excluídos do scan de simulação.
+    RDRE,
+    RADR,
+    RBDR,
+    RDRS
 }
 
 public enum eDblPos

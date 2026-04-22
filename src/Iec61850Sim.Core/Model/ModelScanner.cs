@@ -31,8 +31,20 @@ public class ModelScanner
             ["PDIS"] = eLnType.PDIS,
             ["CILO"] = eLnType.CILO,
             ["LLN0"] = eLnType.LLN0,
-            ["LPHD"] = eLnType.LPHD
+            ["LPHD"] = eLnType.LPHD,
+            // Gravadores de perturbação: reconhecidos para permitir exclusão explícita do scan.
+            ["RDRE"] = eLnType.RDRE,
+            ["RADR"] = eLnType.RADR,
+            ["RBDR"] = eLnType.RBDR,
+            ["RDRS"] = eLnType.RDRS
         };
+
+    // LNs de gravador de perturbação não possuem valores simuláveis (sem MX/ST de processo).
+    // São excluídos do PointRegistry para não gerar DevicePoints sem sentido de simulação.
+    private static readonly HashSet<eLnType> LnTypesExcludedFromScan =
+    [
+        eLnType.RDRE, eLnType.RADR, eLnType.RBDR, eLnType.RDRS
+    ];
 
     public void Scan(IedModel model, PointRegistry registry, IEnumerable<string> logicalDevices)
     {
@@ -86,6 +98,10 @@ public class ModelScanner
             out var lnType,
             out var dataObject,
             out var equipmentName);
+
+        // LNs de gravador de perturbação são excluídos do scan (sem valores simuláveis).
+        if (LnTypesExcludedFromScan.Contains(lnType))
+            return;
 
         var reference = da.GetObjectReference();
 

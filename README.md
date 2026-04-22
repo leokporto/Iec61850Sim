@@ -218,6 +218,7 @@ Selecting a node at the Logical Node level or below displays a live point table 
 - Background simulation loop
 - Configuration file loading
 - Parse scl files automatically
+- COMTRADE support
 
 ---
 
@@ -238,7 +239,6 @@ A nice little upgrade from “just runs in a console” to “lives like a prope
 
 ## 📝 Backlog
 
-- [ ] Add COMTRADE support
 - [ ] Add FC Filter over devices point panel
 
 ---

@@ -25,9 +25,19 @@ public class IecServerHost
     private int _connectedClients;
     private int _port = 102;
 
+    // Raiz do FileStore exposta a serviços que gravam COMTRADE (sem separador final).
+    private string _fileStoreRoot = string.Empty;
+
+    // Modelo IEC armazenado para verificação de LNs de gravador em EnsureComtradeDirectories.
+    private IedModel _iedModel;
+
     // Task 1: RCB handle cache — populated at startup and lazily from callbacks.
     private RcbManager _rcbManager = new();
     private IedServer _server;
+
+    // lnClasses que identificam LDs com gravador de perturbação.
+    private static readonly HashSet<string> DisturbanceRecorderLnClasses =
+        ["RDRE", "RADR", "RBDR", "RDRS"];
 
     public IecServerHost(IedModel model, PointRegistry registry, DeviceManager deviceManager,
         ControlCommandProcessor commandProcessor)
@@ -35,17 +45,12 @@ public class IecServerHost
         _registry = registry;
         _deviceManager = deviceManager;
         _commandProcessor = commandProcessor;
+        _iedModel = model;
 
         var config = new IedServerConfig();
         config.ReportBufferSize = 100000;
 
-        // Serviço de arquivos MMS: habilita e aponta para o diretório COMTRADE.
-        // A libiec61850 serve GetFile/GetFileAttributeValues automaticamente a partir
-        // de FileServiceBasePath — nenhum handler adicional é necessário.
-        // Nota: a API .NET da libiec61850 não expõe callback de DeleteFile; exclusões
-        // iniciadas pelo cliente MMS não são notificadas à aplicação.
-        config.FileServiceEnabled = true;
-        config.FileServiceBasePath = Path.Combine(AppContext.BaseDirectory, "COMTRADE");
+        SetComtradeSettings(config);
 
         _server = new IedServer(model, config);
         _server.SetServerIdentity("IEC61850-Sim", "Demo", "1.0.0");
@@ -53,6 +58,10 @@ public class IecServerHost
         // Task 1: resolve and cache RCB handles before the server starts.
         _rcbManager = new RcbManager();
         _rcbManager.Initialize(model, _registry);
+
+        // No construtor o registry ainda está vazio; EnsureComtradeDirectories é no-op aqui
+        // e chamado novamente em RefreshRegistrations após o scan do modelo.
+        EnsureComtradeDirectories();
 
         RegisterControlHandlers();
         RegisterRcbEventHandler();
@@ -67,6 +76,70 @@ public class IecServerHost
     public string ServerModel => _model;
 
     public IedServer Server => _server;
+
+    // Raiz do FileStore para uso pelo ComtradeService na geração de arquivos.
+    public string FileStoreRoot => _fileStoreRoot;
+
+    private void SetComtradeSettings(IedServerConfig config)
+    {
+        _fileStoreRoot = Path.Combine(AppContext.BaseDirectory, "FileStore");
+        Directory.CreateDirectory(_fileStoreRoot);
+
+        // Serviço de arquivos MMS: habilita e aponta para a raiz FileStore.
+        // FileServiceBasePath precisa de separador final: a libiec61850 concatena diretamente
+        // o basepath com o caminho solicitado pelo cliente MMS sem inserir separador
+        // (confirmado em mms_file_service.c: StringUtils_concatString(basepath, fileName)).
+        config.FileServiceEnabled = true;
+        config.FileServiceBasePath = _fileStoreRoot + Path.DirectorySeparatorChar;
+    }
+
+    /// <summary>
+    /// Cria FileStore/LD/&lt;ldName&gt;/COMTRADE/ apenas para LDs que contenham LNs de
+    /// gravador de perturbação (RDRE, RADR, RBDR ou RDRS).
+    /// LDs são derivados do registry; verificação de LN usa IedModel.GetDeviceByInst +
+    /// LogicalDevice.GetChildren() pois esses LNs são excluídos do PointRegistry.
+    /// </summary>
+    private void EnsureComtradeDirectories()
+    {
+        var ldNames = _registry.All
+            .Select(p => p.LogicalDevice)
+            .Where(ld => !string.IsNullOrEmpty(ld))
+            .Distinct();
+
+        foreach (var ldName in ldNames)
+        {
+            if (!LdHasDisturbanceRecorderLns(ldName))
+                continue;
+
+            var comtradePath = Path.Combine(_fileStoreRoot, "LD", ldName, "COMTRADE");
+            Directory.CreateDirectory(comtradePath);
+        }
+    }
+
+    /// <summary>
+    /// Verifica se o LD indicado contém pelo menos um LN de gravador de perturbação,
+    /// percorrendo os filhos do LogicalDevice via IedModel.
+    /// </summary>
+    private bool LdHasDisturbanceRecorderLns(string ldName)
+    {
+        var ld = _iedModel.GetDeviceByInst(ldName);
+        if (ld == null) return false;
+
+        var children = ld.GetChildren();
+        if (children == null) return false;
+
+        foreach (ModelNode child in children)
+        {
+            if (child is not LogicalNode ln) continue;
+            var lnName = ln.GetName();
+            foreach (var drClass in DisturbanceRecorderLnClasses)
+            {
+                if (lnName.Contains(drClass)) return true;
+            }
+        }
+
+        return false;
+    }
 
     public void Start(int port = 102)
     {
@@ -96,6 +169,9 @@ public class IecServerHost
         _rcbManager = new RcbManager();
         _rcbManager.Initialize(model, _registry);
         RegisterControlHandlers();
+
+        // Registry já está populado aqui; cria dirs FileStore/LD/<ldName>/COMTRADE/.
+        EnsureComtradeDirectories();
     }
 
     /// <summary>
@@ -105,14 +181,12 @@ public class IecServerHost
     public void Reinitialize(IedModel model, string serverModel)
     {
         _pendingSelectCtlVals.Clear();
+        _iedModel = model; // atualiza o modelo para verificação de LNs DR no novo arquivo
 
         var config = new IedServerConfig();
         config.ReportBufferSize = 100000;
 
-        // Mesmo comportamento do construtor: serviço de arquivos habilitado sobre
-        // o diretório COMTRADE. GetFile é automático; DeleteFile não é notificado.
-        config.FileServiceEnabled = true;
-        config.FileServiceBasePath = Path.Combine(AppContext.BaseDirectory, "COMTRADE");
+        SetComtradeSettings(config);
 
         _server = new IedServer(model, config);
         _server.SetServerIdentity("IEC61850-Sim", serverModel, "1.0.0");
@@ -122,6 +196,9 @@ public class IecServerHost
         _rcbManager.Initialize(model, _registry);
 
         _connectedClients = 0;
+
+        // Registry já populado pelo ScanAndBuild anterior a Reinitialize.
+        EnsureComtradeDirectories();
 
         RegisterControlHandlers();
         RegisterRcbEventHandler();
