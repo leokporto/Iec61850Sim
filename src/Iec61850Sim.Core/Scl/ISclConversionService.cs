@@ -11,4 +11,11 @@ public interface ISclConversionService
     /// Returns the absolute path to the generated CFG file.
     /// </summary>
     string ConvertToCfg(string sclFilePath);
+
+    /// <summary>
+    /// Returns the file-handling capability declared in the last parsed SCL file.
+    /// Returns <see cref="FileHandlingCapability.Mms"/> when no SCL has been parsed
+    /// (CFG-only model path).
+    /// </summary>
+    FileHandlingCapability GetFileHandlingCapability();
 }

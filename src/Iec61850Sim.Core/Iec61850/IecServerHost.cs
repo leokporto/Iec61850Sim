@@ -7,11 +7,16 @@ using Iec61850Sim.Core.Commands;
 using Iec61850Sim.Core.Device;
 using Iec61850Sim.Core.Model;
 using Iec61850Sim.Core.Points;
+using Iec61850Sim.Core.Scl;
 
 namespace Iec61850Sim.Core.Iec61850;
 
 public class IecServerHost
 {
+    // lnClasses que identificam LDs com gravador de perturbação.
+    private static readonly HashSet<string> DisturbanceRecorderLnClasses =
+        ["RDRE", "RADR", "RBDR", "RDRS"];
+
     private readonly ControlCommandProcessor _commandProcessor;
     private readonly DeviceManager _deviceManager;
     private readonly string _model = "Demo";
@@ -22,35 +27,36 @@ public class IecServerHost
     // available when ControlHandler fires on the subsequent Operate.
     private readonly ConcurrentDictionary<string, MmsValue> _pendingSelectCtlVals = new();
     private readonly PointRegistry _registry;
+    private readonly ServerCapabilities _serverCapabilities;
     private int _connectedClients;
-    private int _port = 102;
 
     // Raiz do FileStore exposta a serviços que gravam COMTRADE (sem separador final).
     private string _fileStoreRoot = string.Empty;
 
     // Modelo IEC armazenado para verificação de LNs de gravador em EnsureComtradeDirectories.
     private IedModel _iedModel;
+    private int _port = 102;
 
     // Task 1: RCB handle cache — populated at startup and lazily from callbacks.
     private RcbManager _rcbManager = new();
     private IedServer _server;
 
-    // lnClasses que identificam LDs com gravador de perturbação.
-    private static readonly HashSet<string> DisturbanceRecorderLnClasses =
-        ["RDRE", "RADR", "RBDR", "RDRS"];
-
     public IecServerHost(IedModel model, PointRegistry registry, DeviceManager deviceManager,
-        ControlCommandProcessor commandProcessor)
+        ControlCommandProcessor commandProcessor, ServerCapabilities serverCapabilities)
     {
         _registry = registry;
         _deviceManager = deviceManager;
         _commandProcessor = commandProcessor;
         _iedModel = model;
+        _serverCapabilities = serverCapabilities;
 
         var config = new IedServerConfig();
         config.ReportBufferSize = 100000;
 
-        SetComtradeSettings(config);
+        // ServerCapabilities.FileHandling is Mms by default at construction time;
+        // it is updated to the SCL-derived value in IedServerManager.Initialize()
+        // before any client connects, so the effective capability is always correct.
+        SetComtradeSettings(config, _serverCapabilities.FileHandling);
 
         _server = new IedServer(model, config);
         _server.SetServerIdentity("IEC61850-Sim", "Demo", "1.0.0");
@@ -80,17 +86,31 @@ public class IecServerHost
     // Raiz do FileStore para uso pelo ComtradeService na geração de arquivos.
     public string FileStoreRoot => _fileStoreRoot;
 
-    private void SetComtradeSettings(IedServerConfig config)
+    private void SetComtradeSettings(IedServerConfig config, FileHandlingCapability capability)
     {
         _fileStoreRoot = Path.Combine(AppContext.BaseDirectory, "FileStore");
         Directory.CreateDirectory(_fileStoreRoot);
 
-        // Serviço de arquivos MMS: habilita e aponta para a raiz FileStore.
-        // FileServiceBasePath precisa de separador final: a libiec61850 concatena diretamente
-        // o basepath com o caminho solicitado pelo cliente MMS sem inserir separador
-        // (confirmado em mms_file_service.c: StringUtils_concatString(basepath, fileName)).
-        config.FileServiceEnabled = true;
-        config.FileServiceBasePath = _fileStoreRoot + Path.DirectorySeparatorChar;
+        switch (capability)
+        {
+            case FileHandlingCapability.Mms:
+            case FileHandlingCapability.Both:
+                // FileServiceBasePath needs a trailing separator: libiec61850 concatenates
+                // basepath and the client-requested path directly without inserting one
+                // (confirmed in mms_file_service.c: StringUtils_concatString(basepath, fileName)).
+                config.FileServiceEnabled = true;
+                config.FileServiceBasePath = _fileStoreRoot + Path.DirectorySeparatorChar;
+                break;
+
+            case FileHandlingCapability.Ftp:
+                // FTP server is managed by FtpServerHost via IedServerManager.
+                // MMS file service is intentionally not enabled for FTP-only capability.
+                break;
+
+            case FileHandlingCapability.None:
+                // <FileHandling> absent — do not expose any file service
+                break;
+        }
     }
 
     /// <summary>
@@ -178,7 +198,7 @@ public class IecServerHost
     /// Recreates the internal IedServer with a new model. Does NOT start the server.
     /// Call RuntimeEngine.StartServer(port) afterward to start on the desired port.
     /// </summary>
-    public void Reinitialize(IedModel model, string serverModel)
+    public void Reinitialize(IedModel model, string serverModel, FileHandlingCapability fileHandling)
     {
         _pendingSelectCtlVals.Clear();
         _iedModel = model; // atualiza o modelo para verificação de LNs DR no novo arquivo
@@ -186,7 +206,7 @@ public class IecServerHost
         var config = new IedServerConfig();
         config.ReportBufferSize = 100000;
 
-        SetComtradeSettings(config);
+        SetComtradeSettings(config, fileHandling);
 
         _server = new IedServer(model, config);
         _server.SetServerIdentity("IEC61850-Sim", serverModel, "1.0.0");

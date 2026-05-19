@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 using IEC61850.SCL;
 
 using Microsoft.Extensions.Logging;
@@ -9,6 +11,7 @@ public class SclConversionService : ISclConversionService
     private static readonly string[] SclExtensions = [".icd", ".cid", ".scd"];
     private readonly ILogger<SclConversionService> _logger;
     private string _iedName = "IED";
+    private string? _lastSclPath;
     private List<string> _logicalDeviceNames = new List<string>();
 
     public SclConversionService(ILogger<SclConversionService> logger)
@@ -28,6 +31,8 @@ public class SclConversionService : ISclConversionService
 
     public string ConvertToCfg(string sclFilePath)
     {
+        _lastSclPath = sclFilePath;
+
         if (!File.Exists(sclFilePath))
             throw new FileNotFoundException($"SCL file not found: {sclFilePath}", sclFilePath);
 
@@ -70,6 +75,41 @@ public class SclConversionService : ISclConversionService
         }
     }
 
+    public FileHandlingCapability GetFileHandlingCapability()
+    {
+        if (_lastSclPath == null)
+            return FileHandlingCapability.Mms;
+
+        try
+        {
+            return ParseFileHandlingCapability(XDocument.Load(_lastSclPath));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[SclConversionService] Could not read FileHandling from {Path}; defaulting to Mms",
+                _lastSclPath);
+            return FileHandlingCapability.Mms;
+        }
+    }
+
     public static bool IsSclFile(string path) =>
         SclExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
+
+    internal static FileHandlingCapability ParseFileHandlingCapability(XDocument doc)
+    {
+        var fileHandling = doc.Descendants()
+            .FirstOrDefault(e => e.Name.LocalName == "FileHandling");
+
+        if (fileHandling == null)
+            return FileHandlingCapability.None;
+
+        bool hasMms = string.Equals(fileHandling.Attribute("mms")?.Value, "true",
+            StringComparison.OrdinalIgnoreCase);
+        bool hasFtp = string.Equals(fileHandling.Attribute("ftp")?.Value, "true",
+            StringComparison.OrdinalIgnoreCase);
+
+        if (hasMms && hasFtp) return FileHandlingCapability.Both;
+        if (hasFtp) return FileHandlingCapability.Ftp;
+        return FileHandlingCapability.Mms; // present with no attributes, or mms="true" only
+    }
 }

@@ -33,6 +33,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="FubarDev.FtpServer" Version="3.1.2"/>
+        <PackageReference Include="FubarDev.FtpServer.FileSystem.DotNet" Version="3.1.2"/>
       <PackageReference Include="MudBlazor" Version="9.2.0" />
     </ItemGroup>
 

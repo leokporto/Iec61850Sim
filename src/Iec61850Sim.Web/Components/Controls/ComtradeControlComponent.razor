@@ -1,7 +1,9 @@
 @using Iec61850Sim.Core.Comtrade
 @using Iec61850Sim.Core.Comtrade.Models
+@using Iec61850Sim.Core.Scl
 
 @inject IComtradeService ComtradeService
+@inject ServerCapabilities ServerCapabilities
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
     <MudText Typo="Typo.subtitle2"><b>COMTRADE</b></MudText>
@@ -11,13 +13,16 @@
     <MudCheckBox @bind-Value="_generateZip"
                  Label="ZIP"
                  Size="Size.Small"
-                 Color="Color.Secondary" />
+                 Color="Color.Secondary"
+                 Disabled="@FileHandlingDisabled"/>
 
-    <MudIconButton Icon="@Icons.Material.Filled.SaveAlt"
-                   Color="Color.Secondary"
-                   Size="Size.Small"
-                   Disabled="@_isGenerating"
-                   OnClick="@GenerateFault" />
+    <MudTooltip Text="@DisabledTooltip" Disabled="@(!FileHandlingDisabled)">
+        <MudIconButton Icon="@Icons.Material.Filled.SaveAlt"
+                       Color="Color.Secondary"
+                       Size="Size.Small"
+                       Disabled="@(_isGenerating || FileHandlingDisabled)"
+                       OnClick="@GenerateFault"/>
+    </MudTooltip>
 
     @if (_lastRecord is not null)
     {
@@ -37,6 +42,12 @@
     private bool _isGenerating;
     private ComtradeRecord? _lastRecord;
     private string? _errorMessage;
+
+    private bool FileHandlingDisabled =>
+        ServerCapabilities.FileHandling == FileHandlingCapability.None;
+
+    private string DisabledTooltip =>
+        "File transfer not declared in SCL (<FileHandling> absent)";
 
     private async Task GenerateFault()
     {

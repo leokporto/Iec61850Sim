@@ -17,7 +17,9 @@
       "Bash(ls:*)",
       "Bash(/tmp/libiec61850_research_summary.txt:*)",
       "Read(//tmp/**)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(xargs -I{} grep -E \"\\(DotNetFileSystem|UseDotNetFileSystem|RootPath|FtpServerOptions|FtpServer\\\\.Port\\)\" {})",
+      "Bash(xargs -I{} grep -E \"\\(DotNetFileSystemOptions|UseDotNetFileSystem|RootPath\\)\" {})"
     ]
   }
 }

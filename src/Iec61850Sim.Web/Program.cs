@@ -1,3 +1,7 @@
+using FubarDev.FtpServer;
+using FubarDev.FtpServer.AccountManagement;
+using FubarDev.FtpServer.FileSystem.DotNet;
+
 using IEC61850.Server;
 
 using Iec61850Sim.Core;
@@ -6,12 +10,12 @@ using MudBlazor.Services;
 
 using Iec61850Sim.Core.Commands;
 using Iec61850Sim.Core.Device;
+using Iec61850Sim.Core.Iec61850;
 using Iec61850Sim.Core.Model.Tree;
 using Iec61850Sim.Core.Points;
 using Iec61850Sim.Core.Scl;
 using Iec61850Sim.Core.Simulation;
 using Iec61850Sim.Core.Comtrade;
-using Iec61850Sim.Core.Iec61850;
 using Iec61850Sim.Web.Components;
 using Iec61850Sim.Web.Services;
 
@@ -44,6 +48,7 @@ public class Program
 
         // DI registrations
         builder.Services.AddSingleton<ISclConversionService, SclConversionService>();
+        builder.Services.AddSingleton<ServerCapabilities>();
         builder.Services.AddSingleton<IedModel>(IedServerManager.CreateModel);
         builder.Services.AddSingleton<PointRegistry>();
         builder.Services.AddSingleton<IPointRegistry>(sp => sp.GetRequiredService<PointRegistry>());
@@ -59,6 +64,14 @@ public class Program
         builder.Services.AddSingleton<IComtradeService, ComtradeService>();
         builder.Services.AddSingleton<IModelNode>(IedServerManager.CreateModelNode);
         builder.Services.AddHostedService<SimulationService>();
+
+        var fileStorePath = Path.Combine(AppContext.BaseDirectory, "FileStore");
+        builder.Services.AddFtpServer(b => b.UseDotNetFileSystem());
+        builder.Services.Configure<FtpServerOptions>(o => o.Port = 21);
+        builder.Services.Configure<DotNetFileSystemOptions>(o => o.RootPath = fileStorePath);
+        builder.Services.AddSingleton<IMembershipProvider, SingleUserMembershipProvider>();
+        builder.Services
+            .AddSingleton<Iec61850Sim.Core.Iec61850.IFtpServerHost, Iec61850Sim.Web.Services.FtpServerHost>();
 
         var app = builder.Build();
 

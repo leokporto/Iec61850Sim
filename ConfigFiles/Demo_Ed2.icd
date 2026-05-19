@@ -20,7 +20,7 @@
       <P type="VLAN-ID">000</P>
      </Address>
 	 <MinTime>1</MinTime>
-	 <MaxTime>2000</MaxTime>	 
+	 <MaxTime>2000</MaxTime>
     </GSE>
     <GSE ldInst="ProtCtrl" cbName="gcb2">
      <Address>
@@ -55,7 +55,7 @@
    <GSESettings cbName="Fix" datSet="Fix" appID="Fix"/>
    <GSEDir/>
    <GOOSE max="2"/>
-   <FileHandling/>
+   <FileHandling  ftp="true" />
    <ConfLNs fixPrefix="true" fixLnInst="true"/>
    <ClientServices goose="true">
     <TimeSyncProt sntp="true"/>
@@ -690,7 +690,7 @@
     <DO name="BrcbTrk" type="BTS_0"/>
     <DO name="GocbTrk" type="GTS_0"/>
     <DO name="SgcbTrk" type="STS_0"/>
-  </LNodeType>  
+  </LNodeType>
   <LNodeType id="MHAI_0" lnClass="MHAI">
    <DO name="Mod" type="ENC_0"/>
    <DO name="Beh" type="ENS_0"/>
@@ -780,7 +780,7 @@
    <DA name="cVal" fc="MX" bType="Struct" type="Vector_0"/>
    <DA name="q" fc="MX" bType="Quality"/>
    <DA name="t" fc="MX" bType="Timestamp"/>
-  </DOType>  
+  </DOType>
   <DOType id="CURVE_0" cdc="CURVE">
    <DA name="setCharact" fc="SG" bType="Enum" type="CurveCharKind"/>
   </DOType>
@@ -971,7 +971,7 @@
     <DA name="cnfEdit" bType="BOOLEAN" fc="SR"/>
     <DA name="lActTm" bType="Timestamp" fc="SR"/>
     <DA name="resvTms" bType="INT16U" fc="SR"/>
-  </DOType>  
+  </DOType>
   <DOType id="WYE_0" cdc="WYE">
    <SDO name="phsA" type="CMV_0"/>
    <SDO name="phsB" type="CMV_0"/>
@@ -1234,7 +1234,7 @@
     <EnumVal ord="25">None</EnumVal>
     <EnumVal ord="26">Inconsistent-parameters</EnumVal>
     <EnumVal ord="27">Locked-by-other-client</EnumVal>
-  </EnumType>  
+  </EnumType>
   <EnumType id="FaultDirectionKind">
    <EnumVal ord="0">unknown</EnumVal>
    <EnumVal ord="1">forward</EnumVal>

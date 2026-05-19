@@ -21,11 +21,13 @@ namespace Iec61850Sim.Web.Services;
 public sealed class IedServerManager
 {
     private readonly DeviceManager _deviceManager;
+    private readonly IFtpServerHost _ftpServerHost;
     private readonly IecServerHost _iecHost;
     private readonly IedModel _model;
     private readonly PointRegistry _registry;
     private readonly RuntimeEngine _runtime;
     private readonly ISclConversionService _sclConverter;
+    private readonly ServerCapabilities _serverCapabilities;
     private readonly SimulationEngine _simulationEngine;
     private volatile bool _isRestarting;
 
@@ -36,7 +38,9 @@ public sealed class IedServerManager
         DeviceManager deviceManager,
         SimulationEngine simulationEngine,
         ISclConversionService sclConverter,
-        IedModel model)
+        IedModel model,
+        ServerCapabilities serverCapabilities,
+        IFtpServerHost ftpServerHost)
     {
         _runtime = runtime;
         _iecHost = iecHost;
@@ -45,6 +49,8 @@ public sealed class IedServerManager
         _simulationEngine = simulationEngine;
         _sclConverter = sclConverter;
         _model = model;
+        _serverCapabilities = serverCapabilities;
+        _ftpServerHost = ftpServerHost;
     }
 
     public bool IsRestarting => _isRestarting;
@@ -115,6 +121,8 @@ public sealed class IedServerManager
     public void Initialize()
     {
         ScanAndBuild(_model, _sclConverter.GetLogicalDeviceNames());
+        _serverCapabilities.FileHandling = _sclConverter.GetFileHandlingCapability();
+        ApplyFileHandlingCapabilityAsync(_serverCapabilities.FileHandling).GetAwaiter().GetResult();
         _simulationEngine.ReRegisterDevices();
         _iecHost.RefreshRegistrations(_model);
     }
@@ -156,10 +164,12 @@ public sealed class IedServerManager
 
             // 5. Re-scan model and rebuild devices
             ScanAndBuild(newModel, ldNames);
+            _serverCapabilities.FileHandling = _sclConverter.GetFileHandlingCapability();
+            await ApplyFileHandlingCapabilityAsync(_serverCapabilities.FileHandling);
             _simulationEngine.ReRegisterDevices();
 
             // 6. Reinitialize IEC server with new model (registers control handlers, no Start yet)
-            _iecHost.Reinitialize(newModel, iedName);
+            _iecHost.Reinitialize(newModel, iedName, _serverCapabilities.FileHandling);
 
             // 7. Start server on new port and initialize device state from model defaults
             _runtime.StartServer(port);
@@ -212,4 +222,7 @@ public sealed class IedServerManager
         new DeviceBuilder().Build(_registry, _deviceManager);
         Console.WriteLine($"Devices loaded: {_deviceManager.Devices.Count}");
     }
+
+    private Task ApplyFileHandlingCapabilityAsync(FileHandlingCapability capability) =>
+        FtpLifecycle.ApplyAsync(capability, _ftpServerHost);
 }
