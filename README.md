@@ -1,7 +1,7 @@
 # IEC 61850 Simulator (Iec61850Sim)
 
 > [!WARNING]
-> This repository was moved to [GitLab's Iec61850Sim](https://gitlab.com/leokporto/Iec61850Sim) repository.
+> This repository moved to [GitLab's Iec61850Sim](https://gitlab.com/leokporto/Iec61850Sim) repository.
 
 
 A small **self-hosted web application** and **IEC 61850 server simulator** implemented in **C# / ASP.NET Core (.NET 10)** using the `iec61850dotnet` library.
