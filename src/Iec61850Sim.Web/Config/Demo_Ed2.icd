@@ -55,7 +55,7 @@
    <GSESettings cbName="Fix" datSet="Fix" appID="Fix"/>
    <GSEDir/>
    <GOOSE max="2"/>
-   <FileHandling ftp="true" />
+   <FileHandling mms="true" />
    <ConfLNs fixPrefix="true" fixLnInst="true"/>
    <ClientServices goose="true">
     <TimeSyncProt sntp="true"/>
