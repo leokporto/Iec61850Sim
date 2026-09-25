@@ -107,6 +107,59 @@ public class ComtradeServiceTests : IDisposable
         Assert.Contains("ASCII", cfgContent);
     }
 
+    [Fact]
+    public async Task GenerateFaultAsync_BinaryTargetSizeSeparateFiles_DatFileSizeNearTarget()
+    {
+        _registry.GetByFc(FunctionalConstraint.MX).Returns(BuildAnalogPoints());
+        _registry.GetByFc(FunctionalConstraint.ST).Returns(BuildDigitalPoints());
+        var sut = CreateSut();
+
+        var result = await sut.GenerateFaultAsync(new ComtradeOptions
+        {
+            GenerateZip = false,
+            Waveform = new ComtradeWaveformOptions
+            {
+                DataFormat = ComtradeDataFormat.Binary,
+                TargetSizeBytes = 549120
+            }
+        });
+
+        var datPath = Path.ChangeExtension(result.FilePath, ".dat");
+        Assert.InRange(new FileInfo(datPath).Length, 549120 - 16, 549120);
+        Assert.Equal(new FileInfo(datPath).Length, result.FileSizeBytes);
+        Assert.Equal(ComtradeDataFormat.Binary, result.DataFormat);
+    }
+
+    [Fact]
+    public async Task GenerateFaultAsync_ZipNoCompression_ZipLargerThanDat()
+    {
+        _registry.GetByFc(FunctionalConstraint.MX).Returns(BuildAnalogPoints());
+        _registry.GetByFc(FunctionalConstraint.ST).Returns(BuildDigitalPoints());
+        var sut = CreateSut();
+
+        var result = await sut.GenerateFaultAsync(new ComtradeOptions
+        {
+            GenerateZip = true,
+            ZipCompression = System.IO.Compression.CompressionLevel.NoCompression
+        });
+
+        Assert.True(result.FileSizeBytes > result.DatSizeBytes,
+            $"Zip sem compressão ({result.FileSizeBytes}) deveria ser maior que o .dat ({result.DatSizeBytes})");
+    }
+
+    [Fact]
+    public async Task GenerateFaultAsync_DefaultOptions_WritesUnderLdComtradeDirectory()
+    {
+        _registry.GetByFc(FunctionalConstraint.MX).Returns(BuildAnalogPoints());
+        _registry.GetByFc(FunctionalConstraint.ST).Returns(BuildDigitalPoints());
+        var sut = CreateSut();
+
+        var result = await sut.GenerateFaultAsync(new ComtradeOptions());
+
+        var expectedDir = Path.Combine(_tempDir, "LD", "LD0", "COMTRADE");
+        Assert.Equal(expectedDir, Path.GetDirectoryName(result.FilePath));
+    }
+
     // ── GetGeneratedRecords ────────────────────────────────────────────────
 
     [Fact]

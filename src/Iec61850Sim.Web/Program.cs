@@ -62,6 +62,7 @@ public class Program
         builder.Services.AddSingleton<ManualOperationService>();
         builder.Services.AddSingleton<IedServerManager>();
         builder.Services.AddSingleton<IComtradeService, ComtradeService>();
+        builder.Services.AddSingleton<ComtradeSettings>();
         builder.Services.AddSingleton<IModelNode>(IedServerManager.CreateModelNode);
         builder.Services.AddHostedService<SimulationService>();
 

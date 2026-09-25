@@ -1,0 +1,162 @@
+@using System.IO.Compression
+@using Iec61850Sim.Core.Comtrade
+@using Iec61850Sim.Core.Comtrade.Models
+
+@inject ComtradeSettings ComtradeSettings
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">COMTRADE settings</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.subtitle2">Waveform</MudText>
+
+            <MudStack Row="true" Spacing="3" Wrap="Wrap.Wrap">
+                <MudSelect T="ComtradeScenario" @bind-Value="_scenario" Label="Scenario" Dense="true" Style="min-width: 220px;">
+                    <MudSelectItem Value="ComtradeScenario.SinglePhaseToGround">Single phase to ground (A-G)</MudSelectItem>
+                    <MudSelectItem Value="ComtradeScenario.PhaseToPhase">Phase to phase (B-C)</MudSelectItem>
+                    <MudSelectItem Value="ComtradeScenario.ThreePhase">Three phase</MudSelectItem>
+                    <MudSelectItem Value="ComtradeScenario.AutoReclose">Auto-reclose (A-G, unsuccessful)</MudSelectItem>
+                </MudSelect>
+
+                <MudSelect T="int" @bind-Value="_samplesPerCycle" Label="Samples per cycle" Dense="true"
+                           HelperText="@($"{_samplesPerCycle * 60} Sa/s @ 60 Hz")">
+                    @foreach (var spc in SamplesPerCycleOptions)
+                    {
+                        <MudSelectItem Value="spc">@spc</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudStack>
+
+            <MudStack Row="true" Spacing="3" Wrap="Wrap.Wrap">
+                <MudNumericField T="int" @bind-Value="_preFaultMs" Label="Pre-fault (ms)" Min="0" Max="MaxSegmentMs" Margin="Margin.Dense" />
+                <MudNumericField T="int" @bind-Value="_faultMs" Label="Fault (ms)" Min="1" Max="MaxSegmentMs" Margin="Margin.Dense" />
+                @if (_scenario == ComtradeScenario.AutoReclose)
+                {
+                    <MudNumericField T="int" @bind-Value="_deadTimeMs" Label="Dead time (ms)" Min="0" Max="MaxSegmentMs" Margin="Margin.Dense" />
+                }
+                <MudNumericField T="int" @bind-Value="_postFaultMs" Label="Post-fault (ms)" Min="0" Max="MaxSegmentMs" Margin="Margin.Dense"
+                                 Disabled="@_useTargetSize"
+                                 HelperText="@(_useTargetSize ? "Defined by target size" : null)" />
+            </MudStack>
+
+            <MudSwitch T="bool" @bind-Value="_harmonicsAndNoise" Label="Harmonics (3rd, 5th) and noise" Color="Color.Secondary" />
+
+            <MudDivider />
+            <MudText Typo="Typo.subtitle2">File</MudText>
+
+            <MudRadioGroup T="ComtradeDataFormat" @bind-Value="_dataFormat">
+                <MudRadio Value="ComtradeDataFormat.Ascii" Color="Color.Secondary">ASCII</MudRadio>
+                <MudRadio Value="ComtradeDataFormat.Binary" Color="Color.Secondary">BINARY</MudRadio>
+            </MudRadioGroup>
+
+            <MudSwitch T="bool" @bind-Value="_useTargetSize" Label="Target .dat size" Color="Color.Secondary" />
+            @if (_useTargetSize)
+            {
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap">
+                    <MudNumericField T="long" @bind-Value="_targetSizeBytes" Label="Bytes" Min="1"
+                                     Max="ComtradeWaveformOptions.MAX_TARGET_SIZE_BYTES" Margin="Margin.Dense"
+                                     HelperText="Post-fault grows until the .dat reaches this size" />
+                    @foreach (var preset in TargetSizePresets)
+                    {
+                        <MudChip T="long" Size="Size.Small" Variant="Variant.Outlined"
+                                 OnClick="@(() => _targetSizeBytes = preset)">@preset.ToString("N0")</MudChip>
+                    }
+                </MudStack>
+            }
+
+            <MudStack Row="true" Spacing="3" Wrap="Wrap.Wrap">
+                <MudSwitch T="bool" @bind-Value="_generateZip" Label="ZIP" Color="Color.Secondary" />
+                <MudSwitch T="bool" @bind-Value="_zipNoCompression" Label="ZIP without compression"
+                           Color="Color.Secondary" Disabled="@(!_generateZip)" />
+            </MudStack>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_errorMessage</MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="Save">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private static readonly int[] SamplesPerCycleOptions = [16, 32, 64, 80, 128, 256];
+    private static readonly long[] TargetSizePresets = [43_008, 53_248, 549_120];
+    private const int MaxSegmentMs = ComtradeWaveformOptions.MAX_SEGMENT_MS;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private ComtradeScenario _scenario;
+    private int _samplesPerCycle;
+    private int _preFaultMs;
+    private int _faultMs;
+    private int _postFaultMs;
+    private int _deadTimeMs;
+    private bool _harmonicsAndNoise;
+    private ComtradeDataFormat _dataFormat;
+    private bool _useTargetSize;
+    private long _targetSizeBytes;
+    private bool _generateZip;
+    private bool _zipNoCompression;
+    private string? _errorMessage;
+
+    protected override void OnInitialized()
+    {
+        var current = ComtradeSettings.Current;
+        var waveform = current.Waveform;
+
+        _scenario = waveform.Scenario;
+        _samplesPerCycle = waveform.SamplesPerCycle;
+        _preFaultMs = waveform.PreFaultMs;
+        _faultMs = waveform.FaultMs;
+        _postFaultMs = waveform.PostFaultMs;
+        _deadTimeMs = waveform.DeadTimeMs;
+        _harmonicsAndNoise = waveform.HarmonicsAndNoise;
+        _dataFormat = waveform.DataFormat;
+        _useTargetSize = waveform.TargetSizeBytes is not null;
+        _targetSizeBytes = waveform.TargetSizeBytes ?? TargetSizePresets[0];
+        _generateZip = current.GenerateZip;
+        _zipNoCompression = current.ZipCompression == CompressionLevel.NoCompression;
+    }
+
+    private void Save()
+    {
+        var options = new ComtradeOptions
+        {
+            GenerateZip = _generateZip,
+            ZipCompression = _zipNoCompression ? CompressionLevel.NoCompression : CompressionLevel.Optimal,
+            Waveform = new ComtradeWaveformOptions
+            {
+                Scenario = _scenario,
+                SamplesPerCycle = _samplesPerCycle,
+                PreFaultMs = _preFaultMs,
+                FaultMs = _faultMs,
+                PostFaultMs = _postFaultMs,
+                DeadTimeMs = _deadTimeMs,
+                HarmonicsAndNoise = _harmonicsAndNoise,
+                DataFormat = _dataFormat,
+                TargetSizeBytes = _useTargetSize ? _targetSizeBytes : null
+            }
+        };
+
+        try
+        {
+            ComtradeSettings.Current = options;
+            MudDialog.Close(DialogResult.Ok(options));
+        }
+        catch (ArgumentException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -58,8 +58,13 @@ public class ComtradeService : IComtradeService
 
             try
             {
-                var content = ComtradeGenerator.Generate(recordName, timestamp, analogPoints, digitalPoints);
-                var filePath = ComtradeFileWriter.Write(recordName, content, outputDirectory, options.GenerateZip);
+                var content = ComtradeGenerator.Generate(
+                    recordName, timestamp, analogPoints, digitalPoints, options.Waveform);
+                var filePath = ComtradeFileWriter.Write(
+                    recordName, content, outputDirectory, options.GenerateZip, options.ZipCompression);
+
+                // Separado: o .dat é o arquivo relevante para o tamanho da transferência.
+                var sizedFile = options.GenerateZip ? filePath : Path.ChangeExtension(filePath, ".dat");
 
                 var record = new ComtradeRecord
                 {
@@ -67,13 +72,21 @@ public class ComtradeService : IComtradeService
                     Timestamp = timestamp,
                     AnalogChannelCount = analogPoints.Count,
                     DigitalChannelCount = digitalPoints.Count,
-                    FilePath = filePath
+                    FilePath = filePath,
+                    FileSizeBytes = new FileInfo(sizedFile).Length,
+                    DatSizeBytes = content.Dat.Length,
+                    SampleCount = content.SampleCount,
+                    SampleRateHz = content.SampleRateHz,
+                    DataFormat = options.Waveform.DataFormat,
+                    Scenario = options.Waveform.Scenario
                 };
 
                 lock (_records)
                     _records.Add(record);
 
-                _logger.LogInformation("COMTRADE gerado: {RecordName} → {FilePath}", recordName, filePath);
+                _logger.LogInformation(
+                    "COMTRADE gerado: {RecordName} → {FilePath} ({FileSize} bytes, {Samples} amostras)",
+                    recordName, filePath, record.FileSizeBytes, record.SampleCount);
                 return record;
             }
             catch (Exception ex)

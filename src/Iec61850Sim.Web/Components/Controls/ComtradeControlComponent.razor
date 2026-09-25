@@ -2,19 +2,17 @@
 @using Iec61850Sim.Core.Comtrade.Models
 @using Iec61850Sim.Core.Scl
 
+@implements IDisposable
+
 @inject IComtradeService ComtradeService
+@inject ComtradeSettings ComtradeSettings
 @inject ServerCapabilities ServerCapabilities
+@inject IDialogService DialogService
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
     <MudText Typo="Typo.subtitle2"><b>COMTRADE</b></MudText>
 
     <MudDivider Vertical="true" FlexItem="true" />
-
-    <MudCheckBox @bind-Value="_generateZip"
-                 Label="ZIP"
-                 Size="Size.Small"
-                 Color="Color.Secondary"
-                 Disabled="@FileHandlingDisabled"/>
 
     <MudTooltip Text="@DisabledTooltip" Disabled="@(!FileHandlingDisabled)">
         <MudIconButton Icon="@Icons.Material.Filled.SaveAlt"
@@ -24,10 +22,20 @@
                        OnClick="@GenerateFault"/>
     </MudTooltip>
 
+    <MudTooltip Text="COMTRADE settings">
+        <MudIconButton Icon="@Icons.Material.Filled.Tune"
+                       Size="Size.Small"
+                       Disabled="@FileHandlingDisabled"
+                       OnClick="@OpenSettings"/>
+    </MudTooltip>
+
+    <MudText Typo="Typo.caption" Color="Color.Tertiary">@SettingsSummary</MudText>
+
     @if (_lastRecord is not null)
     {
         <MudText Typo="Typo.caption">
             @_lastRecord.RecordName &mdash; @_lastRecord.Timestamp.ToString("HH:mm:ss")
+            &mdash; @_lastRecord.FileSizeBytes.ToString("N0") bytes
         </MudText>
     }
 
@@ -38,7 +46,6 @@
 </MudStack>
 
 @code {
-    private bool _generateZip = true;
     private bool _isGenerating;
     private ComtradeRecord? _lastRecord;
     private string? _errorMessage;
@@ -49,6 +56,33 @@
     private string DisabledTooltip =>
         "File transfer not declared in SCL (<FileHandling> absent)";
 
+    private string SettingsSummary
+    {
+        get
+        {
+            var options = ComtradeSettings.Current;
+            var waveform = options.Waveform;
+            var size = waveform.TargetSizeBytes is { } target ? $" · {target:N0} B" : "";
+            var container = options.GenerateZip ? "ZIP" : "files";
+            return $"{waveform.Scenario} · {waveform.SamplesPerCycle} spc · {waveform.DataFormat.ToString().ToUpperInvariant()}{size} · {container}";
+        }
+    }
+
+    protected override void OnInitialized() =>
+        ComtradeSettings.Changed += OnSettingsChanged;
+
+    public void Dispose() =>
+        ComtradeSettings.Changed -= OnSettingsChanged;
+
+    // Outro circuito pode alterar as opções: o resumo precisa ser atualizado aqui também.
+    private void OnSettingsChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task OpenSettings()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true };
+        await DialogService.ShowAsync<ComtradeSettingsDialog>("COMTRADE settings", options);
+    }
+
     private async Task GenerateFault()
     {
         _isGenerating = true;
@@ -56,8 +90,7 @@
 
         try
         {
-            var options = new ComtradeOptions { GenerateZip = _generateZip };
-            _lastRecord = await ComtradeService.GenerateFaultAsync(options);
+            _lastRecord = await ComtradeService.GenerateFaultAsync(ComtradeSettings.Current);
         }
         catch (Exception ex)
         {

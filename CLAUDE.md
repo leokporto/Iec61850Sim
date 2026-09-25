@@ -15,8 +15,11 @@ dotnet run --project src/Iec61850Sim.Web/Iec61850Sim.Web.csproj
 # Tests — xUnit v3 requires dotnet run, NOT dotnet test
 dotnet run --project tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj
 
-# Run a single test class
-dotnet run --project tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj -- --filter "FullyQualifiedName~DeviceBuilderTests"
+# Run a single test class (xUnit v3 runner syntax: fully qualified class name; --filter is not supported)
+dotnet run --project tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj -- -class "Iec61850Sim.UnitTests.Device.DeviceBuilderTests"
+
+# Run a single test method
+dotnet run --project tests/Iec61850Sim.UnitTests/Iec61850Sim.UnitTests.csproj -- -method "Iec61850Sim.UnitTests.Device.DeviceBuilderTests.<MethodName>"
 
 # Publish (self-contained, Windows)
 dotnet publish src/Iec61850Sim.Web -c Release -r win-x64 --self-contained true

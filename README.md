@@ -186,6 +186,22 @@ To test COMTRADE retrieval over MMS:
 3. Generate a fault record for a Logical Device that has a disturbance recorder LN, either via the COMTRADE control in the web UI or by calling `IComtradeService.GenerateFaultAsync(...)`.
 4. Connect an MMS client with File Service support (e.g. the `file_client` example from libiec61850, or a tool like IEDScout) to port `102` and browse/download from the relative path `LD/<ldName>/COMTRADE/`.
 
+### Waveform and file size
+
+Records contain synthesized 60 Hz waveforms (not constant RMS values). Open the ⚙ (tune) button next to the COMTRADE generate button to configure them. The settings are shared by every browser session:
+
+| Setting | Options |
+|---|---|
+| Scenario | Single phase to ground (A-G), phase to phase (B-C), three phase, auto-reclose (fault → open → reclose onto fault → final trip) |
+| Samples per cycle | 16 / 32 / 64 / 80 / 128 / 256 (960 – 15 360 Sa/s) |
+| Durations | Pre-fault, fault, post-fault and dead time (ms) |
+| Harmonics and noise | 3rd/5th harmonics plus deterministic noise. The noise is seeded by the record name, so the same record name always gives the same samples. |
+| Data format | `ASCII` or `BINARY` (COMTRADE 1999) |
+| Target .dat size | Extends the post-fault until the `.dat` reaches the given size without exceeding it. `BINARY` lands within one sample record of the target. Presets: 43 008, 53 248 and 549 120 bytes. |
+| ZIP / ZIP without compression | Without compression, the `.zip` stays close to the combined size of the three files. |
+
+Large records (for example > 64 KB) make the MMS client issue many consecutive `FileRead` requests. Use them to exercise segmentation and timeouts in the client.
+
 > [!WARNING]
 > `ConfigFiles/*.icd|*.cfg` and `src/Iec61850Sim.Web/Config/*.icd|*.cfg` are the shipped model files — edit them locally to experiment, but treat them as read-only artifacts when contributing changes back.
 

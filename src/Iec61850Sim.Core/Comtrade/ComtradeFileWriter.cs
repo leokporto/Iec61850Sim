@@ -13,12 +13,13 @@ internal static class ComtradeFileWriter
         string recordName,
         ComtradeGenerator.GeneratedContent content,
         string outputDirectory,
-        bool generateZip)
+        bool generateZip,
+        CompressionLevel compression = CompressionLevel.Optimal)
     {
         Directory.CreateDirectory(outputDirectory);
 
         if (generateZip)
-            return WriteZip(recordName, content, outputDirectory);
+            return WriteZip(recordName, content, outputDirectory, compression);
 
         return WriteSeparateFiles(recordName, content, outputDirectory);
     }
@@ -26,14 +27,15 @@ internal static class ComtradeFileWriter
     private static string WriteZip(
         string recordName,
         ComtradeGenerator.GeneratedContent content,
-        string outputDirectory)
+        string outputDirectory,
+        CompressionLevel compression)
     {
         var zipPath = Path.Combine(outputDirectory, $"{recordName}.zip");
 
         using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
-        AddTextEntry(zip, $"{recordName}.hdr", content.Hdr);
-        AddTextEntry(zip, $"{recordName}.cfg", content.Cfg);
-        AddTextEntry(zip, $"{recordName}.dat", content.Dat);
+        AddEntry(zip, $"{recordName}.hdr", Encoding.ASCII.GetBytes(content.Hdr), compression);
+        AddEntry(zip, $"{recordName}.cfg", Encoding.ASCII.GetBytes(content.Cfg), compression);
+        AddEntry(zip, $"{recordName}.dat", content.Dat, compression);
 
         return zipPath;
     }
@@ -47,18 +49,18 @@ internal static class ComtradeFileWriter
         var cfgPath = Path.Combine(outputDirectory, $"{recordName}.cfg");
         var datPath = Path.Combine(outputDirectory, $"{recordName}.dat");
 
-        // COMTRADE utiliza codificação ASCII
+        // COMTRADE utiliza codificação ASCII; o .dat já vem codificado (ASCII ou binário)
         File.WriteAllText(hdrPath, content.Hdr, Encoding.ASCII);
         File.WriteAllText(cfgPath, content.Cfg, Encoding.ASCII);
-        File.WriteAllText(datPath, content.Dat, Encoding.ASCII);
+        File.WriteAllBytes(datPath, content.Dat);
 
         return hdrPath;
     }
 
-    private static void AddTextEntry(ZipArchive zip, string entryName, string content)
+    private static void AddEntry(ZipArchive zip, string entryName, byte[] content, CompressionLevel compression)
     {
-        var entry = zip.CreateEntry(entryName);
-        using var writer = new StreamWriter(entry.Open(), Encoding.ASCII);
-        writer.Write(content);
+        var entry = zip.CreateEntry(entryName, compression);
+        using var stream = entry.Open();
+        stream.Write(content);
     }
 }
